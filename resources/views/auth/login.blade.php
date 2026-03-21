@@ -156,10 +156,10 @@
         @csrf
 
         <div class="mb-3">
-            <label class="form-label fw-bold" style="color: var(--purple-900); font-size: 0.9rem;">Usuario</label>
+            <label class="form-label fw-bold" style="color: var(--purple-900); font-size: 0.9rem;">Correo</label>
             <div class="input-group">
                 <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                <input type="text" name="nombre_usuario" class="form-control with-icon" placeholder="Ej. admin_123" value="{{ old('nombre_usuario') }}" required autofocus autocomplete="username">
+                <input type="text" name="nombre_usuario" class="form-control with-icon" placeholder="Ej. admin_123@gmail.com" value="{{ old('nombre_usuario') }}" required autofocus autocomplete="username">
             </div>
         </div>
 
