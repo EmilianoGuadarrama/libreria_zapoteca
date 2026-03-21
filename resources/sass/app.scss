@@ -1,0 +1,69 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+//Functions
+@import 'bootstrap/scss/functions';
+
+//fonts
+@font-face {
+    font-family: 'Bebas Neue';
+    src:
+        url('/public/fonts/bebasneue/BebasNeue-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+/* Archivo (texto/párrafos) */
+@font-face {
+    font-family: 'Archivo';
+    src:url('/public/fonts/archivo/Archivo-Regular.ttf') format('truetype');
+    font-weight: 400; /* Regular */
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Archivo';
+    src:
+    url('/public/fonts/archivo/Archivo-SemiBold.ttf') format('truetype');
+    font-weight: 600; /* SemiBold */
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Archivo';
+    src:
+    url('/public/fonts/archivo/Archivo-Bold.ttf') format('truetype');
+    font-weight: 700; /* Bold */
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Roboto (alternativa para UI) */
+@font-face {
+    font-family: 'Roboto';
+    src:
+    url('/public/fonts/roboto/Roboto-Regular.ttf') format('truetype');
+    font-weight: 400; /* Regular */
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto';
+    src: url('/public/fonts/roboto/Roboto-Medium.ttf') format('truetype');
+    font-weight: 500; /* Medium */
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Roboto';
+    src:
+    url('/public/fonts/roboto/Roboto-Bold.ttf') format('truetype');
+    font-weight: 700; /* Bold */
+    font-style: normal;
+    font-display: swap;
+}

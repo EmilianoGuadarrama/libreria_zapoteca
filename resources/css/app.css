@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -8,4 +10,70 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Encabezado de la tabla */
+table.mi-datatable thead th {
+    background-color: #4b1c71 !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #7f4ca5 !important;
+}
+
+/* Fondo de fila en hover */
+table.mi-datatable tbody tr:hover td {
+    background-color: #fff0ff !important;
+}
+
+/* Efecto focus en buscador y selector de registros */
+.dataTables_wrapper .form-control:focus,
+.dataTables_wrapper .form-select:focus {
+    border-color: #7f4ca5;
+    box-shadow: 0 0 0 0.25rem rgba(127, 76, 165, 0.25);
+}
+
+/* Espaciado inferior de controles superiores */
+.dataTables_wrapper .row {
+    margin-bottom: 0.5rem;
+}
+
+/* Redefinición de variables globales de Bootstrap 5 para paginación */
+.dataTables_wrapper .pagination {
+    --bs-pagination-color: #4b1c71;
+    --bs-pagination-hover-color: #4b1c71;
+    --bs-pagination-hover-bg: #dbb6ee;
+    --bs-pagination-hover-border-color: #b57edc;
+    --bs-pagination-active-color: #ffffff;
+    --bs-pagination-active-bg: #4b1c71;
+    --bs-pagination-active-border-color: #4b1c71;
+    --bs-pagination-disabled-color: #7f4ca5;
+    --bs-pagination-disabled-bg: #fff0ff;
+    --bs-pagination-disabled-border-color: #dbb6ee;
+    --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(127, 76, 165, 0.25);
+}
+
+/* Aplicación estricta de variables en estado normal */
+.dataTables_wrapper .page-link {
+    color: var(--bs-pagination-color) !important;
+    box-shadow: none !important;
+}
+
+/* Aplicación estricta de variables en estado activo */
+.dataTables_wrapper .page-item.active .page-link {
+    background-color: var(--bs-pagination-active-bg) !important;
+    border-color: var(--bs-pagination-active-border-color) !important;
+    color: var(--bs-pagination-active-color) !important;
+}
+
+/* Aplicación estricta de variables en estado deshabilitado */
+.dataTables_wrapper .page-item.disabled .page-link {
+    color: var(--bs-pagination-disabled-color) !important;
+    background-color: var(--bs-pagination-disabled-bg) !important;
+    border-color: var(--bs-pagination-disabled-border-color) !important;
+}
+
+/* Aplicación estricta de variables en estado hover */
+.dataTables_wrapper .page-item:not(.active):not(.disabled) .page-link:hover {
+    background-color: var(--bs-pagination-hover-bg) !important;
+    color: var(--bs-pagination-hover-color) !important;
+    border-color: var(--bs-pagination-hover-border-color) !important;
 }
