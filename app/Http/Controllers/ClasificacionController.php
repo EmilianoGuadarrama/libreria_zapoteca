@@ -10,12 +10,9 @@ class ClasificacionController extends Controller
 {
     public function index()
     {
-        // Trae todos los registros para que DataTables los maneje
         $clasificaciones = Clasificacion::orderBy('nombre', 'asc')->get();
         return view('clasificaciones.index', compact('clasificaciones'));
     }
-
-    // ELIMINAMOS EL METODO create()
 
     public function store(Request $request)
     {
@@ -35,7 +32,6 @@ class ClasificacionController extends Controller
         }
     }
 
-    // ELIMINAMOS EL METODO edit()
 
     public function update(Request $request, string $id)
     {
