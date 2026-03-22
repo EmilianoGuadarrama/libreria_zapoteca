@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class libro extends Model
+class Libro extends Model
 {
-    //
-    use softDeletes;
+    use SoftDeletes;
+
     protected $table = 'libros';
     protected $primaryKey = 'id';
+
     protected $fillable = [
         'titulo',
         'sinopsis',
@@ -21,6 +22,11 @@ class libro extends Model
 
     public function clasificacion()
     {
-        return $this->belongsTo(clasificacion::class, 'clasificacion_id');
+        return $this->belongsTo(Clasificacion::class, 'clasificacion_id');
+    }
+
+    public function ediciones()
+    {
+        return $this->hasMany(Edicion::class, 'libro_id');
     }
 }

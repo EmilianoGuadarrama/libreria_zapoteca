@@ -7,9 +7,14 @@ use App\Http\Controllers\LibroController;
 use App\Http\Controllers\ClasificacionController;
 use App\Http\Controllers\AsignaPromocionController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\VentaController;
+use App\Http\Controllers\TicketVentaController;
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::resource('ventas', VentaController::class);
+Route::get('ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
 
 Route::middleware(['auth'])->group(function () {
 
