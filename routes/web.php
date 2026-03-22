@@ -6,6 +6,7 @@ use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\LibroController;
 use App\Http\Controllers\ClasificacionController;
 use App\Http\Controllers\AsignaPromocionController;
+use App\Http\Controllers\ProveedorController;
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -23,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('promociones', PromocionController::class);
         Route::resource('clasificaciones', ClasificacionController::class);
         Route::resource('asigna_promociones', AsignaPromocionController::class);
+        Route::resource('proveedores', ProveedorController::class);
     });
 
     Route::middleware(['rol:Administrador,Bibliotecario'])->group(function () {

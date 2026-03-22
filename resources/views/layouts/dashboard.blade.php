@@ -226,7 +226,10 @@
                 <i class="fa-solid fa-box-open"></i>
                 <span class="bebas">MERMAS</span>
             </a>
-
+            <a href="{{ route('proveedores.index') }}" class="{{ request()->routeIs('proveedores.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-truck-field"></i>
+                <span class="bebas">PROVEEDORES</span>
+            </a>
             <form action="{{ route('logout') }}" method="POST" class="logout" style="margin: 0;">
                 @csrf
                 <button type="submit">
