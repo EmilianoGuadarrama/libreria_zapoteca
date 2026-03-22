@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
 
     <style>
@@ -192,6 +191,17 @@
                 <i class="fa-solid fa-house"></i>
                 <span class="bebas">INICIO</span>
             </a>
+            @if(Auth::user()->rol_id == 1)
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('admin.pendientes') }}">
+                        <i class="fas fa-user-clock"></i>
+                        Aprobaciones
+                        <span class="badge bg-danger">
+                {{ \App\Models\User::where('estado', 'Pendiente')->count() }}
+            </span>
+                    </a>
+                </li>
+            @endif
 
             <div class="nav-title">Catálogo literario</div>
 

@@ -8,13 +8,20 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, ...$roles_permitidos)
+    public function handle($request, Closure $next, ...$roles_permitidos)
     {
         if (!Auth::check()) {
             return redirect('/login');
         }
 
-        $rol_usuario = Auth::user()->rol->nombre;
+        $usuario = Auth::user();
+
+        if (!$usuario->rol) {
+            Auth::logout();
+            return redirect('/login')->withErrors(['correo' => 'Tu usuario no tiene un rol válido asignado.']);
+        }
+
+        $rol_usuario = $usuario->rol->nombre;
 
         if (in_array($rol_usuario, $roles_permitidos)) {
             return $next($request);

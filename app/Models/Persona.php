@@ -3,22 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Persona extends Model
 {
-    use softDeletes;
+    use HasFactory, SoftDeletes;
+
     protected $table = 'personas';
-    protected $primaryKey = 'id_persona';
+    protected $primaryKey = 'id';
     protected $fillable = [
         'nombre',
         'apellido_paterno',
         'apellido_materno',
-        'no_telefono'
+        'genero'
     ];
 
-    public function usuario()
-    {
-        return $this->hasOne(User::class, 'persona_id', 'id_persona');
-    }
+    protected $dates = ['deleted_at', 'created_at', 'updated_at'];
 }

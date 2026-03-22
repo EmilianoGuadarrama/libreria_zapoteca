@@ -10,20 +10,41 @@ use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\TicketVentaController;
 
+// Rutas públicas
+Route::get('/', function () {
+    return view('welcome');
+});
+
+// Rutas de autenticación
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::resource('ventas', VentaController::class);
-Route::get('ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
 
+// Rutas protegidas (requieren autenticación)
 Route::middleware(['auth'])->group(function () {
 
+    // Logout
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', function () {
+    // Dashboard
+    Route::get('/dashboard', function () {
         return view('layouts.dashboard');
     })->name('dashboard');
 
+    // Rutas de ventas (tu parte local)
+    Route::resource('ventas', VentaController::class);
+    Route::get('ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
+
+    // Rutas que requieren rol Administrador
+    Route::middleware(['rol:Administrador'])->group(function () {
+        Route::get('/admin/usuarios-pendientes', [AuthController::class, 'indexPendientes'])->name('admin.pendientes');
+        Route::patch('/admin/usuarios/{id}/activar', [AuthController::class, 'activarUsuario'])->name('admin.activar');
+        Route::delete('/admin/rechazar/{id}', [AdminController::class, 'rechazar'])->name('admin.rechazar');
+    });
+
+    // Rutas por roles específicos
     Route::middleware(['rol:Administrador,Gerente'])->group(function () {
         Route::resource('libros', LibroController::class);
         Route::resource('promociones', PromocionController::class);
