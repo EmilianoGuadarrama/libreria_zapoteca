@@ -36,7 +36,7 @@ class AuthController extends Controller
                 return redirect()->intended('/dashboard');
             }
 
-            return redirect()->intended('/');
+            return redirect('/')->with('success', '¡Qué gusto verte de nuevo en Zapoteca!');
         }
 
         $usuarioExistente = User::where('correo', $request->correo)->first();
@@ -97,9 +97,8 @@ class AuthController extends Controller
 
                 if ($usuario->estado === 'Activo') {
                     Auth::login($usuario);
-                    return redirect()->route('home')->with('success', '¡Registro exitoso! Ya puedes navegar.');
+                    return redirect('/')->with('success', '¡Bienvenido a Zapoteca! Ya puedes navegar.');
                 }
-
                 return redirect()->route('login')->with('info', 'Registro de personal recibido. Espera a que un Administrador active tu cuenta.');
             });
         } catch (\Exception $e) {
@@ -119,8 +118,7 @@ class AuthController extends Controller
     public function activarUsuario($id)
     {
         $usuario = User::findOrFail($id);
-        $usuario->update(['estado' => 'Active']); // O 'Activo', según tu CHECK en Oracle
-
+        $usuario->update(['estado' => 'Activo']);
         return back()->with('success', '¡Usuario activado! Ahora puede iniciar sesión.');
     }
 }

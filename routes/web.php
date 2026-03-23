@@ -13,7 +13,7 @@ use App\Http\Controllers\TicketVentaController;
 // Rutas públicas
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 // Rutas de autenticación
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

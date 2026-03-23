@@ -14,9 +14,8 @@
 
     <style>
         :root {
-            /* Colores extraídos de tu logo Zapoteca */
-            --zapoteca-dark: #4b1c71; /* Púrpura profundo */
-            --zapoteca-light: #b57edc; /* Lila de la máscara */
+            --zapoteca-dark: #4b1c71;
+            --zapoteca-light: #b57edc;
             --purple-100: #fff0ff;
             --text-dark: #2d1f3a;
             --text-muted: #7a6a88;
@@ -39,21 +38,9 @@
             flex-direction: column;
         }
 
-        /* --- NAVBAR --- */
-        .navbar {
-            padding: 20px 0;
-            background: transparent;
-        }
-
-        .navbar-brand img {
-            height: 65px;
-            width: auto;
-            transition: transform 0.3s ease;
-        }
-
-        .navbar-brand img:hover {
-            transform: scale(1.05);
-        }
+        .navbar { padding: 20px 0; background: transparent; }
+        .navbar-brand img { height: 65px; width: auto; transition: transform 0.3s ease; }
+        .navbar-brand img:hover { transform: scale(1.05); }
 
         .nav-link {
             color: var(--zapoteca-dark);
@@ -65,9 +52,7 @@
             transition: color 0.3s;
         }
 
-        .nav-link:hover {
-            color: var(--zapoteca-light);
-        }
+        .nav-link:hover { color: var(--zapoteca-light); }
 
         .btn-nav {
             font-family: var(--font-display);
@@ -99,19 +84,7 @@
             border: 2px solid var(--zapoteca-dark);
         }
 
-        .btn-signup-nav:hover {
-            background-color: var(--purple-100);
-            transform: translateY(-2px);
-        }
-
-        /* --- HERO SECTION --- */
-        .hero-section {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            padding: 40px 0;
-        }
-
+        .hero-section { flex: 1; display: flex; align-items: center; padding: 40px 0; }
         .hero-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -124,52 +97,22 @@
             overflow: hidden;
         }
 
-        /* Línea superior con gradiente de tu logo */
         .hero-card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 6px;
+            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
             background: linear-gradient(90deg, var(--zapoteca-dark), var(--zapoteca-light));
         }
 
-        .hero-title {
-            font-family: var(--font-display);
-            font-size: 5rem;
-            color: var(--zapoteca-dark);
-            line-height: 0.85;
-            margin-bottom: 10px;
-        }
-
-        .hero-subtitle {
-            color: var(--zapoteca-light);
-            font-size: 1.4rem;
-            font-weight: 700;
-            letter-spacing: 3px;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-        }
-
-        .hero-text {
-            color: var(--text-muted);
-            font-size: 1.15rem;
-            line-height: 1.7;
-            margin-bottom: 45px;
-            max-width: 90%;
-        }
+        .hero-title { font-family: var(--font-display); font-size: 5rem; color: var(--zapoteca-dark); line-height: 0.85; margin-bottom: 10px; }
+        .hero-subtitle { color: var(--zapoteca-light); font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; margin-bottom: 25px; text-transform: uppercase; }
+        .hero-text { color: var(--text-muted); font-size: 1.15rem; line-height: 1.7; margin-bottom: 45px; max-width: 90%; }
 
         .btn-zapoteca-main {
             background-color: var(--zapoteca-dark);
-            color: white;
-            border: none;
-            padding: 16px 50px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
+            color: white; border: none; padding: 16px 50px; border-radius: 50px;
+            font-weight: 700; font-size: 1.1rem; letter-spacing: 1px;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 10px 25px rgba(75, 28, 113, 0.25);
-            text-decoration: none;
-            display: inline-block;
+            text-decoration: none; display: inline-block;
         }
 
         .btn-zapoteca-main:hover {
@@ -179,35 +122,21 @@
             color: white;
         }
 
-        /* --- ILUSTRACIÓN --- */
-        .img-container {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
+        .img-container { position: relative; display: flex; justify-content: center; align-items: center; }
         .main-logo-hero {
-            width: 100%;
-            max-width: 450px;
+            width: 100%; max-width: 450px;
             filter: drop-shadow(0 25px 45px rgba(75, 28, 113, 0.2));
             animation: floating 6s ease-in-out infinite;
         }
 
-        @keyframes floating {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-25px); }
+        @keyframes floating { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } }
+        .blob-bg { position: absolute; z-index: -1; width: 130%; opacity: 0.35; fill: var(--zapoteca-light); }
+
+        /* Estilo para el botón de logout tipo link en el dropdown */
+        .btn-logout {
+            background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; width: 100%; text-align: left;
         }
 
-        .blob-bg {
-            position: absolute;
-            z-index: -1;
-            width: 130%;
-            opacity: 0.35;
-            fill: var(--zapoteca-light);
-        }
-
-        /* --- RESPONSIVE --- */
         @media (max-width: 991px) {
             .navbar-nav { padding: 20px 0; text-align: center; }
             .nav-item { margin-bottom: 12px; }
@@ -237,16 +166,40 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#">Novedades</a>
                 </li>
-                <li class="nav-item ms-lg-4">
-                    <a href="{{ route('login') }}" class="btn-nav btn-login-nav">
-                        <i class="fa-solid fa-user me-2"></i> INICIAR SESIÓN
-                    </a>
-                </li>
-                <li class="nav-item ms-lg-2">
-                    <a href="{{ route('register') }}" class="btn-nav btn-signup-nav">
-                        CREAR CUENTA
-                    </a>
-                </li>
+
+                {{-- LÓGICA DINÁMICA DE BOTONES --}}
+                @guest
+                    <li class="nav-item ms-lg-4">
+                        <a href="{{ route('login') }}" class="btn-nav btn-login-nav">
+                            <i class="fa-solid fa-user me-2"></i> INICIAR SESIÓN
+                        </a>
+                    </li>
+                    <li class="nav-item ms-lg-2">
+                        <a href="{{ route('register') }}" class="btn-nav btn-signup-nav">
+                            CREAR CUENTA
+                        </a>
+                    </li>
+                @endguest
+
+                @auth
+                    <li class="nav-item dropdown ms-lg-4">
+                        <a class="nav-link dropdown-toggle btn-nav btn-login-nav text-white px-4" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-circle-user me-2"></i> HOLA, {{ explode(' ', Auth::user()->persona->nombre)[0] }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" aria-labelledby="userDropdown" style="border-radius: 15px;">
+                            <li><a class="dropdown-item py-2" href="#"><i class="fa-solid fa-id-card me-2"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item py-2 text-danger bg-transparent border-0 w-100 text-start">
+                                        <i class="fa-solid fa-power-off me-2"></i> Cerrar Sesión
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                @endauth
             </ul>
         </div>
     </div>
@@ -257,13 +210,20 @@
         <div class="hero-card">
             <div class="row align-items-center">
                 <div class="col-lg-6 order-2 order-lg-1">
-                    <h1 class="hero-title">BIENVENIDO</h1>
-                    <h1 class="hero-title">lIBRERIA <br>ZAPOTECA</h1>
-                    <h2 class="hero-subtitle">La sabiduría de leer</h2>
+                    {{-- SALUDO PERSONALIZADO --}}
+                    @auth
+                        <h1 class="hero-title">¡HOLA DE <br>NUEVO!</h1>
+                        <h2 class="hero-subtitle">{{ Auth::user()->persona->nombre }}</h2>
+                    @else
+                        <h1 class="hero-title">BIENVENIDO</h1>
+                        <h1 class="hero-title">lIBRERIA <br>ZAPOTECA</h1>
+                        <h2 class="hero-subtitle">La sabiduría de leer</h2>
+                    @endauth
+
                     <p class="hero-text">
                         Explora una colección curada de historias que trascienden el tiempo. Desde clásicos inmortales hasta las novedades más esperadas, encuentra tu próximo libro favorito en el portal líder para apasionados de la lectura.
                     </p>
-                    <a href="{{ route('login') }}" class="btn-zapoteca-main">
+                    <a href="#" class="btn-zapoteca-main">
                         EXPLORAR CATÁLOGO <i class="fa-solid fa-arrow-right-long ms-2"></i>
                     </a>
                 </div>
@@ -284,5 +244,13 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- ALERTA DE ÉXITO --}}
+@if(session('success'))
+    <script>
+        alert("{{ session('success') }}");
+    </script>
+@endif
+
 </body>
 </html>
