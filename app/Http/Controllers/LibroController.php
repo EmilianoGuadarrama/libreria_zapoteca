@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class LibroController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $libros = DB::table('libros')
@@ -22,55 +19,95 @@ class LibroController extends Controller
                 'generos.nombre as nombre_genero'
             )
             ->orderBy('libros.titulo', 'asc')
-            ->paginate(10)->withQueryString();
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('libros.index', compact('libros'));
+        $clasificacionesCatalogo = DB::table('clasificaciones')
+            ->select('id', 'nombre')
+            ->whereNull('deleted_at')
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        $generosCatalogo = DB::table('generos')
+            ->select('id', 'nombre')
+            ->whereNull('deleted_at')
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return view('libros.index', compact('libros', 'clasificacionesCatalogo', 'generosCatalogo'));
     }
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create()
     {
-        //
+        return redirect()->route('libros.index');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'sinopsis' => 'required|string',
+            'clasificacion_id' => 'required|integer|exists:clasificaciones,id',
+            'anio_publicacion_original' => 'required|integer',
+            'genero_principal_id' => 'required|integer|exists:generos,id',
+        ]);
+
+        DB::table('libros')->insert([
+            'titulo' => trim($request->titulo),
+            'sinopsis' => trim($request->sinopsis),
+            'clasificacion_id' => $request->clasificacion_id,
+            'anio_publicacion_original' => $request->anio_publicacion_original,
+            'genero_principal_id' => $request->genero_principal_id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->route('libros.index')->with('status', 'Libro registrado correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(libro $cr)
     {
-        //
+        return redirect()->route('libros.index');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(libro $cr)
     {
-        //
+        return redirect()->route('libros.index');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, libro $cr)
+    public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'sinopsis' => 'required|string',
+            'clasificacion_id' => 'required|integer|exists:clasificaciones,id',
+            'anio_publicacion_original' => 'required|integer',
+            'genero_principal_id' => 'required|integer|exists:generos,id',
+        ]);
+
+        DB::table('libros')
+            ->where('id', $id)
+            ->update([
+                'titulo' => trim($request->titulo),
+                'sinopsis' => trim($request->sinopsis),
+                'clasificacion_id' => $request->clasificacion_id,
+                'anio_publicacion_original' => $request->anio_publicacion_original,
+                'genero_principal_id' => $request->genero_principal_id,
+                'updated_at' => now(),
+            ]);
+
+        return redirect()->route('libros.index')->with('status', 'Libro actualizado correctamente.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(libro $cr)
+    public function destroy(string $id)
     {
-        //
+        DB::table('libros')
+            ->where('id', $id)
+            ->update([
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return redirect()->route('libros.index')->with('status', 'Libro eliminado correctamente.');
     }
 }

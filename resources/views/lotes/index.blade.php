@@ -1,246 +1,234 @@
 @extends('layouts.dashboard')
 
 @section('dashboard-content')
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, var(--purple-700) 0%, var(--purple-900) 100%);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: bold;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(75, 28, 113, 0.2);
-    }
+    <div class="container py-4">
 
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--white);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    }
-    .data-table th {
-        background: var(--purple-100);
-        color: var(--purple-900);
-        text-align: left;
-        padding: 15px;
-        font-family: var(--font-display);
-        letter-spacing: 0.5px;
-    }
-    .data-table td {
-        padding: 15px;
-        border-bottom: 1px solid var(--border);
-        color: var(--text-dark);
-    }
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0 text-dark fw-bold">Gestión de Lotes</h3>
+            <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"
+                    data-bs-toggle="modal" data-bs-target="#modalCreateLote"
+                    data-bs-placement="left" title="Nuevo Lote">
+                <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>
+            </button>
+        </div>
 
-    /* Estilos del Modal */
-    .modal-overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(45, 31, 58, 0.6);
-        backdrop-filter: blur(4px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-    .modal-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    .modal-content {
-        background: var(--white);
-        border-radius: 20px;
-        width: 100%;
-        max-width: 500px;
-        padding: 24px;
-        transform: translateY(-20px);
-        transition: transform 0.3s ease;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-    }
-    .modal-overlay.active .modal-content {
-        transform: translateY(0);
-    }
-    .form-group {
-        margin-bottom: 15px;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: bold;
-        color: var(--purple-900);
-    }
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-family: var(--font-body);
-    }
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 24px;
-    }
-    .btn-secondary {
-        background: #f1f1f1;
-        color: #333;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-</style>
+        @if(session('success'))
+            <div class="alert alert-dismissible fade show shadow-sm" role="alert" style="background-color: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; border-radius: 12px;">
+                <i class="fa-solid fa-check-circle me-2" style="color: #7f4ca5;"></i> 
+                <span class="fw-semibold">{{ session('success') }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
 
-<div class="page-header">
-    <h2 class="bebas" style="font-size: 2.2rem; color: var(--purple-900); margin: 0;">Gestión de Lotes</h2>
-    <button class="btn-primary" onclick="abrirModal()">
-        <i class="fa-solid fa-plus"></i> NUEVO LOTE
-    </button>
-</div>
+        @if(session('error') || $errors->any())
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> 
+                {{ session('error') ?? $errors->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
 
-@if(session('success'))
-    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        {{ session('success') }}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mi-datatable" style="width:100%">
+                <thead class="table-light">
+                    <tr>
+                        <th class="bebas">Código</th>
+                        <th class="bebas">Libro / Edición</th>
+                        <th class="bebas">Entrada</th>
+                        <th class="bebas">Stock Actual</th>
+                        <th class="bebas">Ubicación</th>
+                        <th class="text-end bebas">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($lotes as $lote)
+                        <tr>
+                            <td class="fw-bold align-middle">{{ $lote->codigo }}</td>
+                            <td class="align-middle">
+                                <span class="fw-semibold">{{ $lote->edicion->libro->titulo ?? 'N/A' }}</span><br>
+                                <small class="text-muted">ISBN: {{ $lote->edicion->isbn ?? 'N/A' }}</small>
+                            </td>
+                            <td class="align-middle">{{ \Carbon\Carbon::parse($lote->fecha_entrada)->format('d/m/Y H:i') }}</td>
+                            <td class="align-middle">
+                                <span class="badge" style="background-color: {{ $lote->cantidad > 0 ? '#fff0ff' : '#fce8e6' }}; color: {{ $lote->cantidad > 0 ? '#4b1c71' : '#d93025' }}; border: 1px solid {{ $lote->cantidad > 0 ? '#dbb6ee' : '#f5c6cb' }}; border-radius: 8px; font-size: 0.9rem;">
+                                    {{ $lote->cantidad }}
+                                </span>
+                            </td>
+                            <td class="align-middle text-muted">{{ $lote->ubicacion->codigo ?? 'N/A' }}</td>
+                            
+                            <td class="text-end align-middle">
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
+                                        data-bs-toggle="modal" data-bs-target="#modalEditLote{{ $lote->id }}"
+                                        data-bs-placement="top" title="Editar Lote">
+                                    <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
+                                </button>
+
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                        data-bs-toggle="modal" data-bs-target="#modalDeleteLote{{ $lote->id }}"
+                                        data-bs-placement="top" title="Eliminar Lote">
+                                    <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-boxes-stacked fs-2 mb-2 opacity-50"></i><br>
+                                No hay lotes registrados aún.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+    <div class="modal fade" id="modalCreateLote" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-box-open me-2"></i> Registrar Ingreso de Lote</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('lotes.store') }}" method="POST">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Código del Lote (Único):</label>
+                            <input type="text" name="codigo" class="form-control rounded-3 bg-light" placeholder="Ej. LTB-001" required maxlength="16" style="text-transform: uppercase;">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" style="color: #4b1c71;">Libro (Edición):</label>
+                                <select name="edicion_id" class="form-select rounded-3 bg-light" required>
+                                    <option value="">Seleccione una edición...</option>
+                                    @foreach($ediciones as $edicion)
+                                        <option value="{{ $edicion->id }}">{{ $edicion->isbn }} - {{ $edicion->libro->titulo ?? 'Sin título' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" style="color: #4b1c71;">Compra Origen:</label>
+                                <select name="compra_id" class="form-select rounded-3 bg-light" required>
+                                    <option value="">Seleccione la factura...</option>
+                                    @foreach($compras as $compra)
+                                        <option value="{{ $compra->id }}">Folio: {{ $compra->folio_factura }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" style="color: #4b1c71;">Cantidad Ingresada:</label>
+                                <input type="number" name="cantidad" class="form-control rounded-3 bg-light" value="1" min="1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" style="color: #4b1c71;">Ubicación Fija:</label>
+                                <select name="ubicacion_id" class="form-select rounded-3 bg-light" required>
+                                    <option value="">Seleccione ubicación...</option>
+                                    @foreach($ubicaciones as $ubicacion)
+                                        <option value="{{ $ubicacion->id }}">P:{{ $ubicacion->pasillo }} E:{{ $ubicacion->estante }} N:{{ $ubicacion->nivel }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #4b1c71;">Guardar Lote</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-@endif
-@if(session('error'))
-    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-        {{ session('error') }}
-    </div>
-@endif
 
-<table class="data-table">
-    <thead>
-        <tr>
-            <th>Código</th>
-            <th>Libro / Edición</th>
-            <th>Entrada</th>
-            <th>Stock Actual</th>
-            <th>Ubicación</th>
-        </tr>
-    </thead>
-    <tbody>
-        @forelse($lotes as $lote)
-            <tr>
-                <td><strong>{{ $lote->codigo }}</strong></td>
-                <td>
-                    {{ $lote->edicion->libro->titulo ?? 'N/A' }}<br>
-                    <small style="color: var(--text-muted);">ISBN: {{ $lote->edicion->isbn ?? 'N/A' }}</small>
-                </td>
-                <td>{{ \Carbon\Carbon::parse($lote->fecha_entrada)->format('d/m/Y H:i') }}</td>
-                <td>
-                    <span style="background: {{ $lote->cantidad > 0 ? 'var(--purple-100)' : '#f8d7da' }}; color: {{ $lote->cantidad > 0 ? 'var(--purple-900)' : '#721c24' }}; padding: 4px 8px; border-radius: 6px; font-weight: bold;">
-                        {{ $lote->cantidad }}
-                    </span>
-                </td>
-                <td>{{ $lote->ubicacion->codigo ?? 'N/A' }}</td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="5" style="text-align: center; color: var(--text-muted);">No hay lotes registrados aún.</td>
-            </tr>
-        @endforelse
-    </tbody>
-</table>
-
-<div style="margin-top: 20px;">
-    {{ $lotes->links() }}
-</div>
-
-<div class="modal-overlay" id="modalLote">
-    <div class="modal-content">
-        <h3 class="bebas" style="color: var(--purple-900); font-size: 1.8rem; margin-top: 0; border-bottom: 2px solid var(--purple-100); padding-bottom: 10px;">Registrar Ingreso de Lote</h3>
+    @foreach($lotes as $lote)
         
-        <form action="{{ route('lotes.store') }}" method="POST">
-            @csrf
-            
-            <div class="form-group">
-                <label>Código del Lote (Único):</label>
-                <input type="text" name="codigo" class="form-control" placeholder="Ej. LTB-001" required maxlength="16" style="text-transform: uppercase;">
-            </div>
-
-            <div class="form-group">
-                <label>Libro (Edición):</label>
-                <select name="edicion_id" class="form-control" required>
-                    <option value="">Seleccione una edición...</option>
-                    @foreach($ediciones as $edicion)
-                        <option value="{{ $edicion->id }}">{{ $edicion->isbn }} - {{ $edicion->libro->titulo ?? 'Sin título' }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Compra Origen:</label>
-                <select name="compra_id" class="form-control" required>
-                    <option value="">Seleccione la factura de compra...</option>
-                    @foreach($compras as $compra)
-                        <option value="{{ $compra->id }}">Folio: {{ $compra->folio_factura }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 1;">
-                    <label>Cantidad Ingresada:</label>
-                    <input type="number" name="cantidad" class="form-control" value="1" min="1" required>
+        <div class="modal fade" id="modalEditLote{{ $lote->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                    <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
+                        <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Lote</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ route('lotes.update', $lote->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" style="color: #4b1c71;">Código del Lote:</label>
+                                <input type="text" name="codigo" class="form-control rounded-3 bg-light" value="{{ $lote->codigo }}" required maxlength="16" style="text-transform: uppercase;">
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" style="color: #4b1c71;">Libro (Edición):</label>
+                                    <select name="edicion_id" class="form-select rounded-3 bg-light" required>
+                                        @foreach($ediciones as $edicion)
+                                            <option value="{{ $edicion->id }}" {{ $lote->edicion_id == $edicion->id ? 'selected' : '' }}>
+                                                {{ $edicion->isbn }} - {{ $edicion->libro->titulo ?? 'Sin título' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" style="color: #4b1c71;">Compra Origen:</label>
+                                    <select name="compra_id" class="form-select rounded-3 bg-light" required>
+                                        @foreach($compras as $compra)
+                                            <option value="{{ $compra->id }}" {{ $lote->compra_id == $compra->id ? 'selected' : '' }}>
+                                                Folio: {{ $compra->folio_factura }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" style="color: #4b1c71;">Cantidad (Stock Actual):</label>
+                                    <input type="number" name="cantidad" class="form-control rounded-3 bg-light" value="{{ $lote->cantidad }}" min="0" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" style="color: #4b1c71;">Ubicación Fija:</label>
+                                    <select name="ubicacion_id" class="form-select rounded-3 bg-light" required>
+                                        @foreach($ubicaciones as $ubicacion)
+                                            <option value="{{ $ubicacion->id }}" {{ $lote->ubicacion_id == $ubicacion->id ? 'selected' : '' }}>
+                                                P:{{ $ubicacion->pasillo }} E:{{ $ubicacion->estante }} N:{{ $ubicacion->nivel }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #4b1c71;">Actualizar Lote</button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="form-group" style="flex: 1;">
-                    <label>Ubicación Fija:</label>
-                    <select name="ubicacion_id" class="form-control" required>
-                        <option value="">Seleccione...</option>
-                        @foreach($ubicaciones as $ubicacion)
-                            <option value="{{ $ubicacion->id }}">P:{{ $ubicacion->pasillo }} E:{{ $ubicacion->estante }} N:{{ $ubicacion->nivel }}</option>
-                        @endforeach
-                    </select>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalDeleteLote{{ $lote->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                    <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                        <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Eliminación</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 text-center">
+                        <p class="fs-5 mb-1">¿Estás seguro de eliminar el lote <br><strong>"{{ $lote->codigo }}"</strong>?</p>
+                        <p class="text-muted small mb-0 mt-2">Esta acción descontará el stock asociado a este lote de forma definitiva.</p>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                        <form action="{{ route('lotes.destroy', $lote->id) }}" method="post" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>
+                        </form>
+                    </div>
                 </div>
             </div>
+        </div>
+        
+    @endforeach
 
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-                <button type="submit" class="btn-primary">Guardar Lote</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script>
-    function abrirModal() {
-        document.getElementById('modalLote').classList.add('active');
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalLote').classList.remove('active');
-    }
-
-    // Cerrar modal al hacer clic fuera del contenido
-    document.getElementById('modalLote').addEventListener('click', function(e) {
-        if (e.target === this) {
-            cerrarModal();
-        }
-    });
-</script>
 @endsection
