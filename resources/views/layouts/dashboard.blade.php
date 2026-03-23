@@ -9,6 +9,7 @@
         $menuPromociones = request()->routeIs('promociones.*') || request()->routeIs('asigna_promociones.*');
         $menuVentas = request()->routeIs('ventas.*') || request()->routeIs('detalle_ventas.*');
         $menuCompras = request()->routeIs('compras.*') || request()->routeIs('detalle_compras.*') || request()->routeIs('lotes.*');
+        $menuCompras = request()->routeIs('compras.*') || request()->routeIs('detalle_compras.*') || request()->routeIs('lotes.*') || request()->routeIs('proveedores.*');
     @endphp
 
     <style>
@@ -398,8 +399,13 @@
                     <span class="bebas">COMPRAS</span>
                     <i class="fa-solid fa-chevron-down chevron"></i>
                 </button>
-
+                
                 <div class="submenu">
+                    <a href="{{ Route::has('proveedores.index') ? route('proveedores.index') : '#' }}" class="{{ request()->routeIs('proveedores.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-truck-field"></i>
+                        <span>Proveedores</span>
+                    </a>
+
                     <a href="{{ Route::has('compras.index') ? route('compras.index') : '#' }}" class="{{ request()->routeIs('compras.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-cart-flatbed"></i>
                         <span>Compras</span>
@@ -409,6 +415,7 @@
                         <i class="fa-solid fa-boxes-stacked"></i>
                         <span>Lotes</span>
                     </a>
+                    
                 </div>
             </div>
 
