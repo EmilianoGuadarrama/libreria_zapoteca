@@ -1,5 +1,13 @@
 @extends('layouts.app')
+
 @section('content')
+
+    @php
+        $menuPersonas = request()->routeIs('personas.*') || request()->routeIs('usuarios.*') || request()->routeIs('autores.*');
+        $menuLibros = request()->routeIs('libros.*') || request()->routeIs('asigna_subgenero.*') || request()->routeIs('asigna_autores.*');
+        $menuGeneros = request()->routeIs('generos.*') || request()->routeIs('subgeneros.*');
+        $menuPromociones = request()->routeIs('promociones.*') || request()->routeIs('asigna_promociones.*');
+    @endphp
 
     <style>
         :root{
@@ -41,8 +49,8 @@
                 radial-gradient(circle at bottom left, rgba(127,76,165,.08), transparent 30%),
                 linear-gradient(180deg, #fbf7fd 0%, #f6eefb 100%);
         }
-        .sidebar
-        {
+
+        .sidebar{
             width:280px;
             flex-shrink:0;
             color:#fff;
@@ -73,40 +81,29 @@
         }
 
         .sidebar .brand {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 40px;
-            padding: 20px 0 10px;
-            width: 100%;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            margin-bottom:40px;
+            padding:20px 0 10px;
+            width:100%;
         }
 
         .sidebar .brand img {
-            width: 160px;
-            height: auto;
-            max-height: 160px;
-            object-fit: contain;
-
-            background: transparent;
-            border: none;
-            padding: 0;
-
-            filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
-
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width:160px;
+            height:auto;
+            max-height:160px;
+            object-fit:contain;
+            background:transparent;
+            border:none;
+            padding:0;
+            filter:drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+            transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .sidebar .brand img:hover {
-            transform: scale(1.1);
-            filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6)) brightness(1.1);
-        }
-
-        .sidebar .brand span{
-            font-size:1.75rem;
-            line-height:1;
-            font-weight:800;
-            color:#fff;
-            text-shadow:0 3px 8px rgba(0,0,0,.18);
+            transform:scale(1.1);
+            filter:drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6)) brightness(1.1);
         }
 
         .nav-title{
@@ -130,14 +127,15 @@
             font-weight:700;
             transition:all .25s ease;
             margin-bottom:4px;
+            width:100%;
         }
-
 
         .sidebar a i,
         .sidebar button i{
             width:18px;
             text-align:center;
             font-size:.95rem;
+            flex-shrink:0;
         }
 
         .sidebar a:hover,
@@ -153,10 +151,63 @@
             box-shadow:inset 4px 0 0 #fff, 0 8px 20px rgba(0,0,0,.08);
         }
 
+        .menu-toggle{
+            border:none;
+            background:transparent;
+            text-align:left;
+            justify-content:flex-start;
+            cursor:pointer;
+        }
+
+        .menu-toggle .chevron{
+            margin-left:auto;
+            font-size:.80rem;
+            transition:transform .25s ease;
+        }
+
+        .nav-block.open .menu-toggle .chevron{
+            transform:rotate(180deg);
+        }
+
+        .nav-block{
+            margin-bottom:4px;
+        }
+
+        .submenu{
+            display:none;
+            padding-left:12px;
+            margin:6px 0 10px 14px;
+            border-left:1px solid rgba(255,255,255,.18);
+        }
+
+        .nav-block.open .submenu{
+            display:block;
+        }
+
+        .submenu a{
+            padding:10px 12px;
+            border-radius:10px;
+            font-weight:600;
+            font-size:.95rem;
+            margin-bottom:4px;
+        }
+
+        .submenu a.active{
+            background:rgba(255,255,255,.14);
+            box-shadow:inset 3px 0 0 #fff;
+        }
+
         .logout{
             margin-top:auto;
             border-top:1px solid rgba(255,255,255,.14);
             padding-top:14px;
+        }
+
+        .logout button{
+            border:none;
+            background:transparent;
+            justify-content:flex-start;
+            cursor:pointer;
         }
 
         .content{
@@ -172,9 +223,11 @@
             .dashboard-container{
                 flex-direction:column;
             }
+
             .sidebar{
                 width:100%;
             }
+
             .content{
                 padding:22px;
             }
@@ -187,59 +240,138 @@
                 <img src="{{ asset('img/logo.png') }}" alt="Logo">
             </div>
 
-            <a href="" class="{{ request()->routeIs('') ? 'active' : '' }}">
+            <a href="{{ url('/') }}" class="{{ request()->is('/') ? 'active' : '' }}">
                 <i class="fa-solid fa-house"></i>
                 <span class="bebas">INICIO</span>
             </a>
-            @if(Auth::user()->rol_id == 1)
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('admin.pendientes') }}">
-                        <i class="fas fa-user-clock"></i>
-                        Aprobaciones
-                        <span class="badge bg-danger">
-                {{ \App\Models\User::where('estado', 'Pendiente')->count() }}
-            </span>
+
+            <div class="nav-title">Gestión de usuarios</div>
+
+            <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuPersonas ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-users"></i>
+                    <span class="bebas">PERSONAS</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+
+                <div class="submenu">
+                    <a href="{{ Route::has('personas.index') ? route('personas.index') : '#' }}" class="{{ request()->routeIs('personas.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-id-card"></i>
+                        <span>Personas</span>
                     </a>
-                </li>
-            @endif
+
+                    <a href="{{ Route::has('usuarios.index') ? route('usuarios.index') : '#' }}" class="{{ request()->routeIs('usuarios.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Usuarios</span>
+                    </a>
+
+                    <a href="{{ Route::has('autores.index') ? route('autores.index') : '#' }}" class="{{ request()->routeIs('autores.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-feather"></i>
+                        <span>Autores</span>
+                    </a>
+                </div>
+            </div>
 
             <div class="nav-title">Catálogo literario</div>
 
-            <a href="{{route('promociones.index')}}" class="{{ request()->routeIs('promociones.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-bookmark"></i>
-                <span class="bebas">PROMOCIONES</span>
-            </a>
+            <div class="nav-block {{ $menuLibros ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuLibros ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-book"></i>
+                    <span class="bebas">LIBROS</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
 
-            <a href="{{route('asigna_promociones.index')}}" class="{{ request()->routeIs('asigna_promociones.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-bookmark"></i>
-                <span class="bebas">ASIGNAR PROMOCIONES</span>
-            </a>
+                <div class="submenu">
+                    <a href="{{ Route::has('libros.index') ? route('libros.index') : '#' }}" class="{{ request()->routeIs('libros.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Libros</span>
+                    </a>
 
-            <a href="{{route('clasificaciones.index')}}" class="{{ request()->routeIs('clasificaciones.*') ? 'active' : '' }}">
+                    <a href="{{ Route::has('asigna_subgenero.index') ? route('asigna_subgenero.index') : '#' }}" class="{{ request()->routeIs('asigna_subgenero.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>Asigna subgénero</span>
+                    </a>
+
+                    <a href="{{ Route::has('asigna_autores.index') ? route('asigna_autores.index') : '#' }}" class="{{ request()->routeIs('asigna_autores.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-pen-nib"></i>
+                        <span>Asigna autores</span>
+                    </a>
+                </div>
+            </div>
+
+            <a href="{{ Route::has('clasificaciones.index') ? route('clasificaciones.index') : '#' }}" class="{{ request()->routeIs('clasificaciones.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-tags"></i>
                 <span class="bebas">CLASIFICACIONES</span>
             </a>
 
-            <a href="{{route('libros.index')}}" class="{{ request()->routeIs('libros.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-book"></i>
-                <span class="bebas">LIBROS</span>
-            </a>
+            <div class="nav-block {{ $menuGeneros ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuGeneros ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span class="bebas">GÉNEROS</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+
+                <div class="submenu">
+                    <a href="{{ Route::has('generos.index') ? route('generos.index') : '#' }}" class="{{ request()->routeIs('generos.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span>Géneros</span>
+                    </a>
+
+                    <a href="{{ Route::has('subgeneros.index') ? route('subgeneros.index') : '#' }}" class="{{ request()->routeIs('subgeneros.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span>Subgéneros</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-block {{ $menuPromociones ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuPromociones ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span class="bebas">PROMOCIONES</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+
+                <div class="submenu">
+                    <a href="{{ Route::has('promociones.index') ? route('promociones.index') : '#' }}" class="{{ request()->routeIs('promociones.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span>Promociones</span>
+                    </a>
+
+                    <a href="{{ Route::has('asigna_promociones.index') ? route('asigna_promociones.index') : '#' }}" class="{{ request()->routeIs('asigna_promociones.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-percent"></i>
+                        <span>Asignar promociones</span>
+                    </a>
+                </div>
+            </div>
 
             <div class="nav-title">Inventario</div>
 
-            <a href="" class="{{ request()->routeIs('') ? 'active' : '' }}">
+            <a href="{{ Route::has('ubicaciones.index') ? route('ubicaciones.index') : '#' }}" class="{{ request()->routeIs('ubicaciones.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-location-dot"></i>
                 <span class="bebas">UBICACIONES</span>
             </a>
 
-            <a href="#" class="{{ request()->routeIs('mermas.*') ? 'active' : '' }}">
+            <a href="{{ Route::has('mermas.index') ? route('mermas.index') : '#' }}" class="{{ request()->routeIs('mermas.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-box-open"></i>
                 <span class="bebas">MERMAS</span>
             </a>
-            <a href="{{ route('proveedores.index') }}" class="{{ request()->routeIs('proveedores.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-truck-field"></i>
-                <span class="bebas">PROVEEDORES</span>
-            </a>
+
             <form action="{{ route('logout') }}" method="POST" class="logout" style="margin: 0;">
                 @csrf
                 <button type="submit">
@@ -247,8 +379,6 @@
                     <span class="bebas">SALIR</span>
                 </button>
             </form>
-
-
         </aside>
 
         <section class="content">
@@ -256,6 +386,18 @@
         </section>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggles = document.querySelectorAll('[data-menu-toggle]');
+
+            toggles.forEach(function (toggle) {
+                toggle.addEventListener('click', function () {
+                    const parent = this.closest('.nav-block');
+                    parent.classList.toggle('open');
+                    this.classList.toggle('active');
+                });
+            });
+        });
+    </script>
 
 @endsection
