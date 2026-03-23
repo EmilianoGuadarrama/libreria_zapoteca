@@ -22,9 +22,24 @@ class Lote extends Model
         'ubicacion_id'
     ];
 
+    public function compra()
+    {
+        return $this->belongsTo(Compra::class, 'compra_id');
+    }
+
     public function edicion()
     {
         return $this->belongsTo(Edicion::class, 'edicion_id');
+    }
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function ubicacion()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
     }
 
     public function detallesVentas()

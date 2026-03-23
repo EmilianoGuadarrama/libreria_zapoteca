@@ -7,6 +7,8 @@
         $menuLibros = request()->routeIs('libros.*') || request()->routeIs('asigna_subgenero.*') || request()->routeIs('asigna_autores.*');
         $menuGeneros = request()->routeIs('generos.*') || request()->routeIs('subgeneros.*');
         $menuPromociones = request()->routeIs('promociones.*') || request()->routeIs('asigna_promociones.*');
+        $menuVentas = request()->routeIs('ventas.*') || request()->routeIs('detalle_ventas.*');
+        $menuCompras = request()->routeIs('compras.*') || request()->routeIs('detalle_compras.*') || request()->routeIs('lotes.*');
     @endphp
 
     <style>
@@ -356,6 +358,56 @@
                     <a href="{{ Route::has('asigna_promociones.index') ? route('asigna_promociones.index') : '#' }}" class="{{ request()->routeIs('asigna_promociones.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-percent"></i>
                         <span>Asignar promociones</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-title">Operaciones</div>
+
+            <div class="nav-block {{ $menuVentas ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuVentas ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="bebas">VENTAS</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+
+                <div class="submenu">
+                    <a href="{{ Route::has('ventas.index') ? route('ventas.index') : '#' }}" class="{{ request()->routeIs('ventas.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Detalle ventas</span>
+                    </a>
+
+                    <a href="{{ Route::has('ventas.create') ? route('ventas.create') : '#' }}" class="{{ request()->routeIs('ventas.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-list"></i>
+                        <span>Cajero(Ventas)</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-block {{ $menuCompras ? 'open' : '' }}">
+                <button
+                    type="button"
+                    class="menu-toggle {{ $menuCompras ? 'active' : '' }}"
+                    data-menu-toggle
+                >
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span class="bebas">COMPRAS</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+
+                <div class="submenu">
+                    <a href="{{ Route::has('compras.index') ? route('compras.index') : '#' }}" class="{{ request()->routeIs('compras.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-cart-flatbed"></i>
+                        <span>Compras</span>
+                    </a>
+
+                    <a href="{{ Route::has('lotes.index') ? route('lotes.index') : '#' }}" class="{{ request()->routeIs('lotes.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Lotes</span>
                     </a>
                 </div>
             </div>
