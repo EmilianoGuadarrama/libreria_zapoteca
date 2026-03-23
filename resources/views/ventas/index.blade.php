@@ -1,5 +1,6 @@
-<!doctype html>
-<html lang="es">
+@extends('layouts.dashboard')
+
+@section('dashboard-content')
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -62,7 +63,6 @@
                     <table class="table align-middle">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Folio</th>
                                 <th>Usuario</th>
                                 <th>Fecha</th>
@@ -73,7 +73,6 @@
                         <tbody>
                             @forelse($ventas as $venta)
                                 <tr>
-                                    <td>{{ $venta->id }}</td>
                                     <td><span class="badge rounded-pill badge-custom">{{ $venta->folio }}</span></td>
                                     <td>{{ $venta->usuario->name ?? $venta->usuario->nombre ?? 'Sin usuario' }}</td>
                                     <td>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y H:i') }}</td>
@@ -108,3 +107,4 @@
     </div>
 </body>
 </html>
+@endsection

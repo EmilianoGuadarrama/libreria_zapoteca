@@ -1,0 +1,325 @@
+[1mdiff --git a/composer.lock b/composer.lock[m
+[1mindex b1e1179..8aa2b8d 100644[m
+[1m--- a/composer.lock[m
+[1m+++ b/composer.lock[m
+[36m@@ -8546,5 +8546,5 @@[m
+         "php": "^8.2"[m
+     },[m
+     "platform-dev": {},[m
+[31m-    "plugin-api-version": "2.9.0"[m
+[32m+[m[32m    "plugin-api-version": "2.6.0"[m
+ }[m
+[1mdiff --git a/config/database.php b/config/database.php[m
+[1mindex df933e7..3b40329 100644[m
+[1m--- a/config/database.php[m
+[1m+++ b/config/database.php[m
+[36m@@ -29,6 +29,28 @@[m
+     |[m
+     */[m
+ [m
+[32m+[m[32m    'connections' => [[m
+[32m+[m
+[32m+[m[32m        // ... otras conexiones ...[m
+[32m+[m
+[32m+[m[32m        'oracle' => [[m
+[32m+[m[32m            'driver'         => 'oracle',[m
+[32m+[m[32m            'tns'            => env('DB_TNS', ''),[m
+[32m+[m[32m            'host'           => env('DB_HOST', 'localhost'),[m
+[32m+[m[32m            'port'           => env('DB_PORT', '1521'),[m
+[32m+[m[32m            'database'       => env('DB_DATABASE', 'xe'),[m
+[32m+[m[32m            'service_name'   => env('DB_SERVICE_NAME', 'xe'),[m
+[32m+[m[32m            'username'       => env('DB_USERNAME', 'system'),[m
+[32m+[m[32m            'password'       => env('DB_PASSWORD', ''),[m
+[32m+[m[32m            'charset'        => env('DB_CHARSET', 'AL32UTF8'),[m
+[32m+[m[32m            'prefix'         => env('DB_PREFIX', ''),[m
+[32m+[m[32m            'prefix_schema'  => env('DB_SCHEMA_PREFIX', ''),[m
+[32m+[m[32m            'edition'        => env('DB_EDITION', 'ora$base'),[m
+[32m+[m[32m            'server_version' => env('DB_SERVER_VERSION', '11g'),[m
+[32m+[m[32m        ],[m
+[32m+[m
+[32m+[m[32m    ],[m
+[32m+[m
+     'connections' => [[m
+ [m
+         'sqlite' => [[m
+[1mdiff --git a/package-lock.json b/package-lock.json[m
+[1mindex e5ef3d4..0e8803f 100644[m
+[1m--- a/package-lock.json[m
+[1m+++ b/package-lock.json[m
+[36m@@ -1,5 +1,5 @@[m
+ {[m
+[31m-    "name": "Libreria",[m
+[32m+[m[32m    "name": "libreria_zapoteca",[m
+     "lockfileVersion": 3,[m
+     "requires": true,[m
+     "packages": {[m
+[36m@@ -8,8 +8,7 @@[m
+                 "@fortawesome/fontawesome-free": "^7.2.0",[m
+                 "bootstrap": "^5.3.8",[m
+                 "datatables.net-bs5": "^2.3.7",[m
+[31m-                "datatables.net-dt": "^2.3.7",[m
+[31m-                "jquery": "^4.0.0"[m
+[32m+[m[32m                "datatables.net-dt": "^2.3.7"[m
+             },[m
+             "devDependencies": {[m
+                 "@tailwindcss/vite": "^4.0.0",[m
+[36m@@ -2645,7 +2644,6 @@[m
+             "integrity": "sha512-Do7u6iRb6K+lrllcTkB1BXcHwOxcKe3rEfOF/GcCLE2w3WpddakRAosJOHFUR37DpsvimQXEt5abs3NzUjEIqg==",[m
+             "dev": true,[m
+             "license": "MIT",[m
+[31m-            "peer": true,[m
+             "dependencies": {[m
+                 "@bufbuild/protobuf": "^2.5.0",[m
+                 "colorjs.io": "^0.5.0",[m
+[36m@@ -3146,7 +3144,6 @@[m
+             "integrity": "sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==",[m
+             "dev": true,[m
+             "license": "MIT",[m
+[31m-            "peer": true,[m
+             "dependencies": {[m
+                 "esbuild": "^0.27.0",[m
+                 "fdir": "^6.5.0",[m
+[1mdiff --git a/package.json b/package.json[m
+[1mindex ad90600..a008540 100644[m
+[1m--- a/package.json[m
+[1m+++ b/package.json[m
+[36m@@ -19,7 +19,6 @@[m
+         "@fortawesome/fontawesome-free": "^7.2.0",[m
+         "bootstrap": "^5.3.8",[m
+         "datatables.net-bs5": "^2.3.7",[m
+[31m-        "datatables.net-dt": "^2.3.7",[m
+[31m-        "jquery": "^4.0.0"[m
+[32m+[m[32m        "datatables.net-dt": "^2.3.7"[m
+     }[m
+ }[m
+[1mdiff --git a/resources/views/asigna_subgeneros/index.blade.php b/resources/views/asigna_subgeneros/index.blade.php[m
+[1mindex e69de29..1c7e11b 100644[m
+[1m--- a/resources/views/asigna_subgeneros/index.blade.php[m
+[1m+++ b/resources/views/asigna_subgeneros/index.blade.php[m
+[36m@@ -0,0 +1,190 @@[m
+[32m+[m[32m@extends('layouts.dashboard')[m
+[32m+[m
+[32m+[m[32m@section('dashboard-content')[m
+[32m+[m[32m    <div class="container py-4">[m
+[32m+[m
+[32m+[m[32m        <div class="d-flex justify-content-between align-items-center mb-4">[m
+[32m+[m[32m            <h3 class="mb-0 text-dark fw-bold">Asignación de Subgéneros</h3>[m
+[32m+[m[32m            <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"[m
+[32m+[m[32m                    data-bs-toggle="modal" data-bs-target="#modalCreateAsignaSubgenero"[m
+[32m+[m[32m                    title="Nueva Asignación">[m
+[32m+[m[32m                <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>[m
+[32m+[m[32m            </button>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        @if(session('status'))[m
+[32m+[m[32m            <div class="alert alert-dismissible fade show shadow-sm" role="alert" style="background-color: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; border-radius: 12px;">[m
+[32m+[m[32m                <i class="fa-solid fa-check-circle me-2" style="color: #7f4ca5;"></i>[m
+[32m+[m[32m                <span class="fw-semibold">{{ session('status') }}</span>[m
+[32m+[m[32m                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        @endif[m
+[32m+[m
+[32m+[m[32m        @if ($errors->any())[m
+[32m+[m[32m            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">[m
+[32m+[m[32m                <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ $errors->first() }}[m
+[32m+[m[32m                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        @endif[m
+[32m+[m
+[32m+[m[32m        <div class="table-responsive">[m
+[32m+[m[32m            <table class="table table-bordered table-striped mi-datatable" style="width:100%">[m
+[32m+[m[32m                <thead>[m
+[32m+[m[32m                <tr>[m
+[32m+[m[32m                    <th>#</th>[m
+[32m+[m[32m                    <th>Libro</th>[m
+[32m+[m[32m                    <th>Subgénero</th>[m
+[32m+[m[32m                    <th class="text-end">Acciones</th>[m
+[32m+[m[32m                </tr>[m
+[32m+[m[32m                </thead>[m
+[32m+[m[32m                <tbody>[m
+[32m+[m[32m                @foreach($asignaciones as $asignacion)[m
+[32m+[m[32m                    <tr>[m
+[32m+[m[32m                        <td>{{ $loop->iteration }}</td>[m
+[32m+[m[32m                        <td class="fw-semibold">{{ $asignacion->titulo_libro }}</td>[m
+[32m+[m[32m                        <td>{{ $asignacion->nombre_subgenero }}</td>[m
+[32m+[m[32m                        <td class="text-end">[m
+[32m+[m[32m                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"[m
+[32m+[m[32m                                    data-bs-toggle="modal" data-bs-target="#modalEditAsignaSubgenero{{ $asignacion->id }}"[m
+[32m+[m[32m                                    title="Editar Asignación">[m
+[32m+[m[32m                                <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>[m
+[32m+[m[32m                            </button>[m
+[32m+[m
+[32m+[m[32m                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"[m
+[32m+[m[32m                                    data-bs-toggle="modal" data-bs-target="#modalDeleteAsignaSubgenero{{ $asignacion->id }}"[m
+[32m+[m[32m                                    title="Eliminar Asignación">[m
+[32m+[m[32m                                <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>[m
+[32m+[m[32m                            </button>[m
+[32m+[m[32m                        </td>[m
+[32m+[m[32m                    </tr>[m
+[32m+[m[32m                @endforeach[m
+[32m+[m[32m                </tbody>[m
+[32m+[m[32m            </table>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+[32m+[m[32m    <div class="modal fade" id="modalCreateAsignaSubgenero" tabindex="-1" aria-hidden="true">[m
+[32m+[m[32m        <div class="modal-dialog modal-dialog-centered modal-lg">[m
+[32m+[m[32m            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">[m
+[32m+[m[32m                <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">[m
+[32m+[m[32m                    <h5 class="modal-title bebas fs-4">[m
+[32m+[m[32m                        <i class="fa-solid fa-circle-plus me-2"></i> Nueva Asignación[m
+[32m+[m[32m                    </h5>[m
+[32m+[m[32m                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>[m
+[32m+[m[32m                </div>[m
+[32m+[m
+[32m+[m[32m                <form action="{{ route('asigna_subgenero.store') }}" method="post">[m
+[32m+[m[32m                    @csrf[m
+[32m+[m[32m                    <div class="modal-body p-4">[m
+[32m+[m[32m                        <div class="row g-3">[m
+[32m+[m[32m                            <div class="col-md-6">[m
+[32m+[m[32m                                <label class="form-label fw-bold" style="color: #4b1c71;">Libro</label>[m
+[32m+[m[32m                                <select name="libro_id" class="form-select" required>[m
+[32m+[m[32m                                    <option value="">Seleccione</option>[m
+[32m+[m[32m                                    @foreach($librosCatalogo as $libro)[m
+[32m+[m[32m                                        <option value="{{ $libro->id }}">{{ $libro->titulo }}</option>[m
+[32m+[m[32m                                    @endforeach[m
+[32m+[m[32m                                </select>[m
+[32m+[m[32m                            </div>[m
+[32m+[m
+[32m+[m[32m                            <div class="col-md-6">[m
+[32m+[m[32m                                <label class="form-label fw-bold" style="color: #4b1c71;">Subgénero</label>[m
+[32m+[m[32m                                <select name="subgenero_id" class="form-select" required>[m
+[32m+[m[32m                                    <option value="">Seleccione</option>[m
+[32m+[m[32m                                    @foreach($subgenerosCatalogo as $subgenero)[m
+[32m+[m[32m                                        <option value="{{ $subgenero->id }}">{{ $subgenero->nombre }}</option>[m
+[32m+[m[32m                                    @endforeach[m
+[32m+[m[32m                                </select>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                    </div>[m
+[32m+[m
+[32m+[m[32m                    <div class="modal-footer border-0 p-4 pt-0">[m
+[32m+[m[32m                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>[m
+[32m+[m[32m                        <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Guardar</button>[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                </form>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </div>[m
+[32m+[m
+[32m+[m[32m    @foreach($asignaciones as $asignacion)[m
+[32m+[m[32m        <div class="modal fade" id="modalEditAsignaSubgenero{{ $asignacion->id }}" tabindex="-1" aria-hidden="true">[m
+[32m+[m[32m            <div class="modal-dialog modal-dialog-centered modal-lg">[m
+[32m+[m[32m                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">[m
+[32m+[m[32m                    <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">[m
+[32m+[m[32m                        <h5 class="modal-title bebas fs-4">[m
+[32m+[m[32m                            <i class="fa-solid fa-pen-to-square me-2"></i> Editar Asignación[m
+[32m+[m[32m                        </h5>[m
+[32m+[m[32m                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>[m
+[32m+[m[32m                    </div>[m
+[32m+[m
+[32m+[m[32m                    <form action="{{ route('asigna_subgenero.update', $asignacion->id) }}" method="post">[m
+[32m+[m[32m                        @csrf[m
+[32m+[m[32m                        @method('PUT')[m
+[32m+[m[32m                        <div class="modal-body p-4">[m
+[32m+[m[32m                            <div class="row g-3">[m
+[32m+[m[32m                                <div class="col-md-6">[m
+[32m+[m[32m                                    <label class="form-label fw-bold" style="color: #4b1c71;">Libro</label>[m
+[32m+[m[32m                                    <select name="libro_id" class="form-select" required>[m
+[32m+[m[32m                                        <option value="">Seleccione</option>[m
+[32m+[m[32m                                        @foreach($librosCatalogo as $libro)[m
+[32m+[m[32m                                            <option value="{{ $libro->id }}" {{ $asignacion->libro_id == $libro->id ? 'selected' : '' }}>[m
+[32m+[m[32m                                                {{ $libro->titulo }}[m
+[32m+[m[32m                                            </option>[m
+[32m+[m[32m                                        @endforeach[m
+[32m+[m[32m                                    </select>[m
+[32m+[m[32m                                </div>[m
+[32m+[m
+[32m+[m[32m                                <div class="col-md-6">[m
+[32m+[m[32m                                    <label class="form-label fw-bold" style="color: #4b1c71;">Subgénero</label>[m
+[32m+[m[32m                                    <select name="subgenero_id" class="form-select" required>[m
+[32m+[m[32m                                        <option value="">Seleccione</option>[m
+[32m+[m[32m                                        @foreach($subgenerosCatalogo as $subgenero)[m
+[32m+[m[32m                                            <option value="{{ $subgenero->id }}" {{ $asignacion->subgenero_id == $subgenero->id ? 'selected' : '' }}>[m
+[32m+[m[32m                                                {{ $subgenero->nombre }}[m
+[32m+[m[32m                                            </option>[m
+[32m+[m[32m                                        @endforeach[m
+[32m+[m[32m                                    </select>[m
+[32m+[m[32m                                </div>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                        </div>[m
+[32m+[m
+[32m+[m[32m                        <div class="modal-footer border-0 p-4 pt-0">[m
+[32m+[m[32m                            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>[m
+[32m+[m[32m                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Actualizar</button>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                    </form>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="modal fade" id="modalDeleteAsignaSubgenero{{ $asignacion->id }}" tabindex="-1" aria-hidden="true">[m
+[32m+[m[32m            <div class="modal-dialog modal-dialog-centered">[m
+[32m+[m[32m                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">[m
+[32m+[m[32m                    <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">[m
+[32m+[m[32m                        <h5 class="modal-title bebas fs-4">[m
+[32m+[m[32m                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Eliminación[m
+[32m+[m[32m                        </h5>[m
+[32m+[m[32m                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>[m
+[32m+[m[32m                    </div>[m
+[32m+[m
+[32m+[m[32m                    <div class="modal-body p-4 text-center">[m
+[32m+[m[32m                        <p class="fs-5 mb-1">¿Estás seguro de eliminar esta asignación?</p>[m
+[32m+[m[32m                        <p class="text-muted small mb-0 mt-2">Esta acción no se puede deshacer.</p>[m
+[32m+[m[32m                    </div>[m
+[32m+[m
+[32m+[m[32m                    <div class="modal-footer border-0 p-4 pt-0 justify-content-center">[m
+[32m+[m[32m                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>[m
+[32m+[m
+[32m+[m[32m                        <form action="{{ route('asigna_subgenero.destroy', $asignacion->id) }}" method="post" class="d-inline">[m
+[32m+[m[32m                            @csrf[m
+[32m+[m[32m                            @method('DELETE')[m
+[32m+[m[32m                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>[m
+[32m+[m[32m                        </form>[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    @endforeach[m
+[32m+[m[32m@endsection[m
+[1mdiff --git a/resources/views/generos/index.blade.php b/resources/views/generos/index.blade.php[m
+[1mindex e69de29..6fa21af 100644[m
+[1m--- a/resources/views/generos/index.blade.php[m
+[1m+++ b/resources/views/generos/index.blade.php[m
+[36m@@ -0,0 +1,150 @@[m
+[32m+[m[32m@extends('layouts.dashboard')[m
+[32m+[m
+[32m+[m[32m@section('dashboard-content')[m
+[32m+[m[32m    <div class="container py-4">[m
+[32m+[m
+[32m+[m[32m        <div class="d-flex justify-content-between align-items-center mb-4">[m
+[32m+[m[32m            <h3 class="mb-0 text-dark fw-bold">Géneros</h3>[m
+[32m+[m[32m            <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"[m
+[32m+[m[32m                    data-bs-toggle="modal" data-bs-target="#modalCreateGenero"[m
+[32m+[m[32m                    title="Nuevo Género">[m
+[32m+[m[32m                <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>[m
+[32m+[m[32m            </button>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        @if(session('status'))[m
+[32m+[m[32m            <div class="alert alert-dismissible fade show shadow-sm" role="alert" style="background-color: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; border-radius: 12px;">[m
+[32m+[m[32m                <i class="fa-solid fa-check-circle me-2" style="color: #7f4ca5;"></i>[m
+[32m+[m[32m                <span class="fw-semibold">{{ session('status') }}</span>[m
+[32m+[m[32m                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        @endif[m
+[32m+[m
+[32m+[m[32m        @if ($errors->any())[m
+[32m+[m[32m            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">[m
+[32m+[m[32m                <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ $errors->first() }}[m
+[32m+[m[32m                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        @endif[m
+[32m+[m
+[32m+[m[32m        <div class="table-responsive">[m
+[32m+[m[32m            <table class="table table-bordered table-striped mi-datatable" style="wi

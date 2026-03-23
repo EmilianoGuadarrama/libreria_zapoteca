@@ -9,6 +9,8 @@ use App\Http\Controllers\AsignaPromocionController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\TicketVentaController;
+use App\Http\Controllers\LoteController;
+use App\Http\Controllers\CompraController;
 
 // Rutas públicas
 Route::get('/', function () {
@@ -33,9 +35,10 @@ Route::middleware(['auth'])->group(function () {
         return view('layouts.dashboard');
     })->name('dashboard');
 
-    // Rutas de ventas (tu parte local)
-    Route::resource('ventas', VentaController::class);
+    // Rutas de ventas
+    Route::get('/ventas/buscar-libro', [VentaController::class, 'buscarLibro'])->name('ventas.buscar_libro');
     Route::get('ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
+    Route::resource('ventas', VentaController::class);
 
     // Rutas que requieren rol Administrador
     Route::middleware(['rol:Administrador'])->group(function () {
@@ -56,5 +59,18 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['rol:Administrador,Bibliotecario'])->group(function () {
         Route::get('/libros', [LibroController::class, 'index'])->name('libros.index');
         Route::get('/clasificaciones', [ClasificacionController::class, 'index'])->name('clasificaciones.index');
+    });
+
+    //Lotes
+    Route::middleware(['rol:Administrador'])->group(function () {
+        Route::get('/admin/lotes', [LoteController::class, 'index'])->name('lotes.index');
+        Route::post('/admin/lotes', [LoteController::class, 'store'])->name('lotes.store');
+        Route::put('/admin/lotes/{id}', [LoteController::class, 'update'])->name('lotes.update');
+        Route::delete('/admin/lotes/{id}', [LoteController::class, 'destroy'])->name('lotes.destroy');
+    });
+
+    //compras
+    Route::middleware(['rol:Administrador'])->group(function () {
+        Route::resource('compras', CompraController::class);
     });
 });
