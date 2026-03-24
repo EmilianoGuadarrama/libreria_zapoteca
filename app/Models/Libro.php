@@ -29,4 +29,9 @@ class Libro extends Model
     {
         return $this->hasMany(Edicion::class, 'libro_id');
     }
+    public function autores()
+{
+    return $this->belongsToMany(Autor::class, 'asigna_autores', 'libro_id', 'autor_id')
+                ->withTimestamps();
+}
 }

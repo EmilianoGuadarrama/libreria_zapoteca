@@ -257,25 +257,20 @@
                     data-menu-toggle
                 >
                     <i class="fa-solid fa-users"></i>
-                    <span class="bebas">PERSONAS</span>
+                    <span class="bebas">Usuarios</span>
                     <i class="fa-solid fa-chevron-down chevron"></i>
                 </button>
 
+
                 <div class="submenu">
-                    <a href="{{ Route::has('personas.index') ? route('personas.index') : '#' }}" class="{{ request()->routeIs('personas.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-id-card"></i>
-                        <span>Personas</span>
+
+                    <a href="{{ Route::has('admin.pendientes') ? route('admin.pendientes') : '#' }}"
+                       class="{{ request()->routeIs('admin.pendientes') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-check"></i>
+                        <span>Validar Usuarios</span>
                     </a>
 
-                    <a href="{{ Route::has('usuarios.index') ? route('usuarios.index') : '#' }}" class="{{ request()->routeIs('usuarios.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-user"></i>
-                        <span>Usuarios</span>
-                    </a>
-
-                    <a href="{{ Route::has('autores.index') ? route('autores.index') : '#' }}" class="{{ request()->routeIs('autores.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-feather"></i>
-                        <span>Autores</span>
-                    </a>
+                    
                 </div>
             </div>
 
@@ -303,10 +298,35 @@
                         <span>Asigna subgénero</span>
                     </a>
 
-                    <a href="{{ Route::has('asigna_autores.index') ? route('asigna_autores.index') : '#' }}" class="{{ request()->routeIs('asigna_autores.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-pen-nib"></i>
-                        <span>Asigna autores</span>
-                    </a>
+                   <a href="{{ Route::has('asigna_autor.index') ? route('asigna_autor.index') : '#' }}" 
+   class="{{ request()->routeIs('asigna_autor.*') ? 'active' : '' }}">
+    <i class="fa-solid fa-pen-nib"></i>
+    <span>Asigna autores</span>
+</a>
+                </div>
+                <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
+                    <button type="button" class="menu-toggle {{ $menuPersonas ? 'active' : '' }}" data-menu-toggle>
+                        <i class="fa-solid fa-users"></i>
+                        <span class="bebas">Autores</span>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+                    <div class="submenu">
+
+                        <a href="{{ route('paises.index') }}" class="{{ request()->routeIs('paises.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-earth-americas"></i>
+                            <span>Países</span>
+                        </a>
+
+                        <a href="{{ route('nacionalidades.index') }}" class="{{ request()->routeIs('nacionalidades.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-flag"></i>
+                            <span>Nacionalidades</span>
+                        </a>
+                        <a href="{{ route('autores.index') }}" class="{{ request()->routeIs('autores.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-feather"></i>
+                            <span>Autores</span>
+                        </a>
+                    </div>
+
                 </div>
             </div>
 
@@ -399,7 +419,7 @@
                     <span class="bebas">COMPRAS</span>
                     <i class="fa-solid fa-chevron-down chevron"></i>
                 </button>
-                
+
                 <div class="submenu">
                     <a href="{{ Route::has('proveedores.index') ? route('proveedores.index') : '#' }}" class="{{ request()->routeIs('proveedores.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-truck-field"></i>
@@ -415,7 +435,7 @@
                         <i class="fa-solid fa-boxes-stacked"></i>
                         <span>Lotes</span>
                     </a>
-                    
+
                 </div>
             </div>
 

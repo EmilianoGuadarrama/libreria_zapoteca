@@ -11,6 +11,11 @@ use App\Http\Controllers\VentaController;
 use App\Http\Controllers\TicketVentaController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\AutorController;
+use App\Http\Controllers\NacionalidadController;
+use App\Http\Controllers\PaisController;
+use App\Http\controllers\AsignaAutorController;
+
 
 // Rutas públicas
 Route::get('/', function () {
@@ -54,6 +59,10 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('clasificaciones', ClasificacionController::class);
         Route::resource('asigna_promociones', AsignaPromocionController::class);
         Route::resource('proveedores', ProveedorController::class);
+        Route::resource('paises', PaisController::class);
+        Route::resource('nacionalidades', NacionalidadController::class);
+        Route::resource('autores', AutorController::class);
+        Route::resource('asigna_autor',AsignaAutorController::class);
     });
 
     Route::middleware(['rol:Administrador,Bibliotecario'])->group(function () {
@@ -74,3 +83,4 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('compras', CompraController::class);
     });
 });
+
