@@ -1,110 +1,94 @@
 @extends('layouts.dashboard')
 
 @section('dashboard-content')
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ventas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body{
-            background:#f4efff;
-            font-family:Arial, Helvetica, sans-serif;
-        }
-        .page-title{
-            color:#4b1d95;
-            font-weight:700;
-        }
-        .card-custom{
-            border:none;
-            border-radius:20px;
-            box-shadow:0 10px 25px rgba(75,29,149,0.10);
-        }
-        .btn-primary-custom{
-            background:#5b21b6;
-            border:none;
-        }
-        .btn-primary-custom:hover{
-            background:#4b1d95;
-        }
-        .table thead{
-            background:#5b21b6;
-            color:#fff;
-        }
-        .table thead th{
-            border:none;
-        }
-        .table tbody tr:hover{
-            background:#f3ebff;
-        }
-        .badge-custom{
-            background:#ede9fe;
-            color:#5b21b6;
-            font-weight:600;
-        }
-    </style>
-</head>
-<body>
-    <div class="container py-5">
+    <div class="container py-4">
+
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="page-title mb-0">Listado de ventas</h1>
-            <a href="{{ route('ventas.create') }}" class="btn btn-primary-custom text-white px-4 rounded-pill">Nueva venta</a>
+            <h3 class="mb-0 text-dark fw-bold">Ventas</h3>
+            <a href="{{ route('ventas.create') }}" class="btn btn-link p-0 text-decoration-none fs-2" title="Nueva Venta">
+                <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>
+            </a>
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success rounded-4 shadow-sm">
-                {{ session('success') }}
+            <div class="alert alert-dismissible fade show shadow-sm" role="alert" style="background-color: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; border-radius: 12px;">
+                <i class="fa-solid fa-check-circle me-2" style="color: #7f4ca5;"></i>
+                <span class="fw-semibold">{{ session('success') }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
 
-        <div class="card card-custom">
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Folio</th>
-                                <th>Usuario</th>
-                                <th>Fecha</th>
-                                <th>Total</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($ventas as $venta)
-                                <tr>
-                                    <td><span class="badge rounded-pill badge-custom">{{ $venta->folio }}</span></td>
-                                    <td>{{ $venta->usuario->name ?? $venta->usuario->nombre ?? 'Sin usuario' }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y H:i') }}</td>
-                                    <td>${{ number_format($venta->total, 2) }}</td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                            <a href="{{ route('ventas.show', $venta->id) }}" class="btn btn-sm btn-outline-primary rounded-pill">Ver</a>
-                                            <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-sm btn-outline-warning rounded-pill">Editar</a>
-                                            <a href="{{ route('ventas.ticket', $venta->id) }}" class="btn btn-sm btn-outline-success rounded-pill">Ticket</a>
-                                            <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Eliminar</button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-4">No hay ventas registradas</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-4">
-                    {{ $ventas->links() }}
-                </div>
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                {{ $errors->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+        @endif
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mi-datatable" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($ventas as $venta)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td class="fw-semibold">{{ $venta->folio }}</td>
+                            <td>
+                                @if($venta->usuario && $venta->usuario->persona)
+                                    {{ $venta->usuario->persona->nombre ?? '' }}
+                                    {{ $venta->usuario->persona->apellido_paterno ?? '' }}
+                                    {{ $venta->usuario->persona->apellido_materno ?? '' }}
+                                @elseif($venta->usuario)
+                                    Usuario ID: {{ $venta->usuario->id }}
+                                @else
+                                    Usuario ID: {{ $venta->usuario_id }}
+                                @endif
+                            </td>
+                            <td>{{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y H:i') }}</td>
+                            <td class="fw-semibold">${{ number_format($venta->total, 2) }}</td>
+                            <td class="text-end">
+                                <a href="{{ route('ventas.show', $venta->id) }}" class="btn btn-link p-0 text-decoration-none fs-5 me-3" title="Ver Venta">
+                                    <i class="fa-solid fa-eye" style="color: #4b1c71;"></i>
+                                </a>
+
+                                <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-link p-0 text-decoration-none fs-5 me-3" title="Editar Venta">
+                                    <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
+                                </a>
+
+                                <a href="{{ route('ventas.ticket', $venta->id) }}" class="btn btn-link p-0 text-decoration-none fs-5 me-3" title="Ver Ticket">
+                                    <i class="fa-solid fa-receipt" style="color: #4b1c71;"></i>
+                                </a>
+
+                                <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-link p-0 text-decoration-none fs-5 border-0 bg-transparent" title="Eliminar Venta">
+                                        <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-4">No hay ventas registradas</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            {{ $ventas->links() }}
         </div>
     </div>
-</body>
-</html>
 @endsection

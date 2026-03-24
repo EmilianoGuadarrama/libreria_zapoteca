@@ -15,7 +15,7 @@ class VentaController extends Controller
 {
     public function index()
     {
-        $ventas = Venta::with('usuario')->orderBy('id', 'desc')->paginate(10);
+        $ventas = Venta::with('usuario.persona')->orderBy('id', 'desc')->paginate(10);
         return view('ventas.index', compact('ventas'));
     }
 
