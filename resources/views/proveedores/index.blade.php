@@ -53,6 +53,11 @@
                     </td>
 
                     <td class="text-end">
+                        <!-- Botón para abrir el Modal de VER DETALLES (NUEVO) -->
+                        <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-2" data-bs-toggle="modal" data-bs-target="#showModal{{ $proveedor->id }}" title="Ver Expediente">
+                            <i class="fa-solid fa-eye" style="color: #b57edc;"></i>
+                        </button>
+
                         <!-- Botón para abrir el Modal de Edición -->
                         <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-2" data-bs-toggle="modal" data-bs-target="#editModal{{ $proveedor->id }}" title="Editar Proveedor">
                             <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
@@ -65,6 +70,83 @@
                                 <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
                             </button>
                         </form>
+
+                        <!-- ============================================== -->
+                        <!-- MODAL DE VER DETALLES (HISTORIAL DE COMPRAS)   -->
+                        <!-- ============================================== -->
+                        <div class="modal fade text-start" id="showModal{{ $proveedor->id }}" tabindex="-1" aria-labelledby="showModalLabel{{ $proveedor->id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 12px 35px rgba(75, 28, 113, .12);">
+                                    
+                                    <div class="modal-header" style="background: linear-gradient(180deg, #f8f2fb 0%, #fdf9ff 100%); border-bottom: 1px solid #eadcf2; border-radius: 16px 16px 0 0;">
+                                        <h5 class="modal-title fw-bold" id="showModalLabel{{ $proveedor->id }}" style="color: #4b1c71;">
+                                            <i class="fa-solid fa-truck-field me-2"></i> Expediente: {{ $proveedor->empresa }}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+
+                                    <div class="modal-body px-4 py-4">
+                                        <!-- Info Básica del Proveedor -->
+                                        <div class="row mb-4 p-3" style="background-color: #fdf9ff; border-radius: 12px; border: 1px solid #eadcf2;">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong style="color: #7f4ca5;">Contacto:</strong> {{ $proveedor->nombre_contacto }}</p>
+                                                <p class="mb-1"><strong style="color: #7f4ca5;">Correo:</strong> {{ $proveedor->correo }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong style="color: #7f4ca5;">Teléfono:</strong> {{ $proveedor->telefono ?? 'N/A' }}</p>
+                                                <p class="mb-1">
+                                                    <strong style="color: #7f4ca5;">Estado Actual:</strong> 
+                                                    <span class="badge {{ strtolower($proveedor->estado) == 'activo' ? 'bg-success' : 'bg-secondary' }}">{{ $proveedor->estado }}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="fw-bold mb-3" style="color: #4b1c71; border-bottom: 2px solid #eadcf2; padding-bottom: 8px;">
+                                            <i class="fa-solid fa-book-open me-2"></i> Historial de Libros Surtidos
+                                        </h6>
+
+                                        <!-- Tabla de Libros -->
+                                        @if(isset($librosSurtidos) && isset($librosSurtidos[$proveedor->id]))
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover table-bordered" style="border-color: #eadcf2;">
+                                                    <thead style="background-color: #fff0ff; color: #4b1c71;">
+                                                        <tr>
+                                                            <th class="fw-semibold">Título del Libro</th>
+                                                            <th class="fw-semibold">ISBN (Edición)</th>
+                                                            <th class="text-center fw-semibold">Ejemplares Recibidos</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($librosSurtidos[$proveedor->id] as $libro)
+                                                            <tr>
+                                                                <td class="align-middle" style="color: #2d1f3a;">{{ $libro->titulo }}</td>
+                                                                <td class="align-middle" style="color: #7a6a88;">{{ $libro->isbn }}</td>
+                                                                <td class="text-center align-middle">
+                                                                    <span class="badge rounded-pill" style="background-color: #b57edc; font-size: 0.85rem;">
+                                                                        {{ $libro->total_ejemplares }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @else
+                                            <div class="alert text-center my-3" style="background-color: transparent; border: 1px dashed #dbb6ee; color: #7a6a88;">
+                                                <i class="fa-solid fa-box-open mb-2 fs-3" style="color: #dbb6ee;"></i><br>
+                                                Aún no tenemos registros de libros recibidos por parte de este proveedor.
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div class="modal-footer" style="border-top: 1px solid #eadcf2; background: #fdf9ff; border-radius: 0 0 16px 16px;">
+                                        <button type="button" class="btn text-white fw-bold px-4" data-bs-dismiss="modal" style="border-radius: 10px; background: linear-gradient(180deg, #7f4ca5 0%, #4b1c71 100%); border: none;">Cerrar Expediente</button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- FIN DEL MODAL DE DETALLES -->
 
                         <!-- MODAL DE EDICIÓN -->
                         <div class="modal fade text-start" id="editModal{{ $proveedor->id }}" tabindex="-1" aria-labelledby="editModalLabel{{ $proveedor->id }}" aria-hidden="true">

@@ -30,8 +30,25 @@ class ProveedorController extends Controller
             ->whereNull('deleted_at')
             ->get();
 
-        // Mandamos ambas variables a la vista index
-        return view('proveedores.index', compact('proveedores', 'personas'));
+        // 3. NUEVO: Traemos el historial de libros surtidos cruzando las tablas de compras
+        // Solo contamos las compras que ya tienen el estado 'Recibida'
+        $librosSurtidos = DB::table('compras')
+            ->join('detalles_compras', 'compras.id', '=', 'detalles_compras.compra_id')
+            ->join('ediciones', 'detalles_compras.edicion_id', '=', 'ediciones.id')
+            ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
+            ->where('compras.estado', 'Recibida') 
+            ->select(
+                'compras.proveedor_id',
+                'libros.titulo',
+                'ediciones.isbn',
+                DB::raw('SUM(detalles_compras.cantidad) as total_ejemplares')
+            )
+            ->groupBy('compras.proveedor_id', 'libros.titulo', 'ediciones.isbn')
+            ->get()
+            ->groupBy('proveedor_id'); // Agrupamos la colección resultante por proveedor_id para la vista
+
+        // Mandamos las 3 variables a la vista index
+        return view('proveedores.index', compact('proveedores', 'personas', 'librosSurtidos'));
     }
 
     public function update(Request $request, $id)
