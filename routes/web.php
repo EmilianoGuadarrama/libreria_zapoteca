@@ -22,12 +22,14 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Rutas de autenticación
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware(['web'])->group(function () {
+    // Rutas de autenticación
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
+});
 
 // Rutas protegidas (requieren autenticación)
 Route::middleware(['auth'])->group(function () {

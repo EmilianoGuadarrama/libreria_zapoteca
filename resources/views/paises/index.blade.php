@@ -1,28 +1,39 @@
 @extends('layouts.dashboard')
 
 @section('dashboard-content')
+    <style>
+        .zapoteca-error {
+            color: #4b1c71;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-control.is-invalid {
+            border-color: #7f4ca5 !important;
+            box-shadow: 0 0 0 0.25rem rgba(127, 76, 165, 0.25) !important;
+        }
+
+        .bebas { font-family: 'Bebas Neue', sans-serif; }
+    </style>
+
     <div class="container py-4">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="mb-0 text-dark fw-bold bebas" style="font-size: 2rem; color: #4b1c71;">Países</h3>
             <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"
                     data-bs-toggle="modal" data-bs-target="#modalCreatePais"
-                    data-bs-placement="left" title="Nuevo País">
+                    title="Nuevo País">
                 <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>
             </button>
         </div>
 
-        {{-- Alertas de Éxito/Error --}}
+        {{-- Alertas de Éxito --}}
         @if(session('status'))
             <div class="alert alert-dismissible fade show shadow-sm" role="alert" style="background-color: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; border-radius: 12px;">
                 <i class="fa-solid fa-check-circle me-2" style="color: #7f4ca5;"></i> <span class="fw-semibold">{{ session('status') }}</span>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ $errors->first() }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
@@ -41,16 +52,13 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td class="fw-semibold">{{ $pais->nombre }}</td>
-
                         <td class="text-end">
-                            {{-- Botón Editar --}}
                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
                                     data-bs-toggle="modal" data-bs-target="#modalEditPais{{ $pais->id }}"
                                     title="Editar País">
                                 <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
                             </button>
 
-                            {{-- Botón Eliminar --}}
                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
                                     data-bs-toggle="modal" data-bs-target="#modalDeletePais{{ $pais->id }}"
                                     title="Eliminar País">
@@ -75,18 +83,28 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form action="{{ route('paises.store') }}" method="post">
+                <form action="{{ route('paises.store') }}" method="post" novalidate>
                     @csrf
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Nombre del País</label>
-                            <input type="text" name="nombre" class="form-control" placeholder="Ej. México, España..." required maxlength="200">
+                            {{-- Solo muestra OLD si no hay un id_edit en sesión (significa que el error fue aquí) --}}
+                            <input type="text" name="nombre" 
+                                   class="form-control @if($errors->has('nombre') && !old('id_edit')) is-invalid @endif" 
+                                   placeholder="Ej. México, España..." 
+                                   value="{{ !old('id_edit') ? old('nombre') : '' }}" required maxlength="200">
+                            
+                            @if($errors->has('nombre') && !old('id_edit'))
+                                <div class="zapoteca-error">
+                                    <i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('nombre') }}
+                                </div>
+                            @endif
                         </div>
                     </div>
 
                     <div class="modal-footer border-0 p-4 pt-0">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Guardar</button>
+                        <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Guardar País</button>
                     </div>
                 </form>
             </div>
@@ -107,19 +125,32 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <form action="{{ route('paises.update', $pais->id) }}" method="post">
+                    <form action="{{ route('paises.update', $pais->id) }}" method="post" novalidate>
                         @csrf
                         @method('PUT')
+                        {{-- Campo oculto para identificar este modal en caso de error --}}
+                        <input type="hidden" name="id_edit" value="{{ $pais->id }}">
+
                         <div class="modal-body p-4">
                             <div class="mb-3">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Nombre del País</label>
-                                <input type="text" name="nombre" class="form-control" value="{{ $pais->nombre }}" required maxlength="200">
+                                {{-- Muestra OLD solo si este es el ID que falló al editar --}}
+                                <input type="text" name="nombre" 
+                                       class="form-control @if($errors->has('nombre') && old('id_edit') == $pais->id) is-invalid @endif" 
+                                       value="{{ old('id_edit') == $pais->id ? old('nombre') : $pais->nombre }}" 
+                                       required maxlength="200">
+                                
+                                @if($errors->has('nombre') && old('id_edit') == $pais->id)
+                                    <div class="zapoteca-error">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('nombre') }}
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
                         <div class="modal-footer border-0 p-4 pt-0">
                             <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Actualizar</button>
+                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: #4b1c71;">Actualizar Datos</button>
                         </div>
                     </form>
                 </div>
@@ -139,12 +170,11 @@
 
                     <div class="modal-body p-4 text-center">
                         <p class="fs-5 mb-1">¿Estás seguro de eliminar el país <br><strong>"{{ $pais->nombre }}"</strong>?</p>
-                        <p class="text-muted small mb-0 mt-2">No se puede recuperar una vez eliminada</p>
+                        <p class="text-muted small mb-0 mt-2">No se puede recuperar una vez eliminado.</p>
                     </div>
 
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-
                         <form action="{{ route('paises.destroy', $pais->id) }}" method="post" class="d-inline">
                             @csrf
                             @method('DELETE')
@@ -154,7 +184,25 @@
                 </div>
             </div>
         </div>
-
     @endforeach
+
+    {{-- Script inteligente para reabrir el modal correcto --}}
+    @if($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                @if(old('id_edit'))
+                    var modalId = 'modalEditPais' + '{{ old("id_edit") }}';
+                @else
+                    var modalId = 'modalCreatePais';
+                @endif
+                
+                var myModalElement = document.getElementById(modalId);
+                if (myModalElement) {
+                    var myModal = new bootstrap.Modal(myModalElement);
+                    myModal.show();
+                }
+            });
+        </script>
+    @endif
 
 @endsection

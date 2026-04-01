@@ -18,17 +18,22 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'correo'      => 'required|email',
             'contrasena'  => 'required|string',
+        ], [
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email'    => 'Ingresa un formato de correo válido.',
+            'contrasena.required' => 'La contraseña es obligatoria.',
         ]);
 
-        if (Auth::attempt([
-            'correo'   => $credentials['correo'],
-            'password' => $credentials['contrasena'],
+        $credenciales = [
+            'correo'   => $request->correo,
+            'password' => $request->contrasena,
             'estado'   => 'Activo'
-        ], $request->filled('remember'))) {
+        ];
 
+        if (Auth::attempt($credenciales, $request->filled('remember'))) {
             $request->session()->regenerate();
             $user = Auth::user();
 
@@ -41,14 +46,14 @@ class AuthController extends Controller
 
         $usuarioExistente = User::where('correo', $request->correo)->first();
         if ($usuarioExistente && $usuarioExistente->estado === 'Pendiente') {
-            return back()->withErrors([
-                'correo' => 'Tu cuenta de staff aún requiere la aprobación de un administrador.',
-            ])->onlyInput('correo');
+            return redirect()->route('login')
+                ->withErrors(['correo' => 'Tu cuenta aún requiere la aprobación de un administrador.'])
+                ->withInput();
         }
 
-        return back()->withErrors([
-            'correo' => 'Las credenciales no coinciden o la cuenta está inactiva.',
-        ])->onlyInput('correo');
+        return redirect()->route('login')
+            ->withErrors(['correo' => 'Las credenciales no coinciden o la cuenta está inactiva.'])
+            ->withInput($request->only('correo'));
     }
 
     public function logout(Request $request)
@@ -56,7 +61,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/login');
+        return redirect()->route('login');
     }
 
     public function showRegisterForm()
@@ -69,15 +74,26 @@ class AuthController extends Controller
         $request->validate([
             'nombre'           => 'required|string|max:200',
             'apellido_paterno' => 'required|string|max:200',
+            'apellido_materno' => 'required|string|max:200', // Validación agregada
             'genero'           => 'required|in:Hombre,Mujer,Otro',
             'correo'           => 'required|email|unique:usuarios,correo',
             'contrasena'       => 'required|string|min:6|confirmed',
-            'rol_id'           => 'required|in:1,2,3', // El usuario elige su rol en el form
+            'rol_id'           => 'required|in:1,2,3',
+        ], [
+            'nombre.required'           => 'El nombre es obligatorio.',
+            'apellido_paterno.required' => 'El apellido paterno es obligatorio.',
+            'apellido_materno.required' => 'El apellido materno es obligatorio.',
+            'genero.required'           => 'Debes seleccionar un género.',
+            'correo.required'           => 'El correo es obligatorio.',
+            'correo.unique'             => 'Este correo ya está registrado en Zapoteca.',
+            'contrasena.required'       => 'La contraseña es obligatoria.',
+            'contrasena.min'            => 'La contraseña debe tener al menos 6 caracteres.',
+            'contrasena.confirmed'      => 'Las contraseñas no coinciden.',
+            'rol_id.required'           => 'El tipo de cuenta es obligatorio.',
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-
                 $persona = Persona::create([
                     'nombre'           => $request->nombre,
                     'apellido_paterno' => $request->apellido_paterno,
@@ -97,17 +113,21 @@ class AuthController extends Controller
 
                 if ($usuario->estado === 'Activo') {
                     Auth::login($usuario);
-                    return redirect('/')->with('success', '¡Bienvenido a Zapoteca! Ya puedes navegar.');
+                    return redirect('/')->with('success', '¡Bienvenido a Zapoteca! Tu cuenta ha sido creada y activada.');
                 }
-                return redirect()->route('login')->with('info', 'Registro de personal recibido. Espera a que un Administrador active tu cuenta.');
+
+                // Redirección al welcome (/) con el mensaje de espera para roles 1 y 2
+                return redirect('/')->with('info', 'Cuenta creada correctamente. Por favor, espera a que un administrador acepte tu cuenta.');
             });
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar: ' . $e->getMessage()])->withInput();
+            return redirect()->route('register')
+                ->withErrors(['correo' => 'Error al registrar: ' . $e->getMessage()])
+                ->withInput();
         }
     }
+
     public function indexPendientes()
     {
-        // Buscamos usuarios con estado Pendiente y cargamos su relación con Persona y Rol
         $pendientes = User::with(['persona', 'rol'])
             ->where('estado', 'Pendiente')
             ->get();
@@ -119,6 +139,6 @@ class AuthController extends Controller
     {
         $usuario = User::findOrFail($id);
         $usuario->update(['estado' => 'Activo']);
-        return back()->with('success', '¡Usuario activado! Ahora puede iniciar sesión.');
+        return back()->with('success', '¡Usuario activado correctamente!');
     }
 }

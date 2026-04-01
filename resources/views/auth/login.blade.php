@@ -71,27 +71,65 @@
 
         .form-label { font-size: 0.85rem; color: var(--purple-900); margin-bottom: 4px; }
 
+        /* --- ESTADO NORMAL --- */
         .form-control {
             border-radius: 12px;
             padding: 12px 18px;
             border: 2px solid #eadcf2;
             background-color: #fdf9ff;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
-        .form-control:focus {
-            border-color: var(--purple-500);
-            box-shadow: 0 0 0 4px rgba(181, 126, 220, 0.1);
-            background-color: var(--white);
+        /* --- CORRECCIÓN DEFINITIVA: ELIMINAR RASTRO DE BOOTSTRAP --- */
+        /* Forzamos el morado y eliminamos el icono de exclamación rojo nativo */
+        .form-control.is-invalid, 
+        .was-validated .form-control:invalid {
+            border-color: var(--purple-700) !important;
+            background-color: var(--purple-100) !important;
+            background-image: none !important; /* QUITA EL ICONO ROJO */
+            box-shadow: 0 0 0 4px rgba(127, 76, 165, 0.1) !important;
         }
 
+        /* Escondemos el texto rojo pequeño que Bootstrap mete por defecto */
+        .invalid-feedback {
+            display: none !important;
+        }
+
+        /* --- ESTILO ZAPOTECA ERROR --- */
+        .zapoteca-error {
+            display: flex !important;
+            align-items: center;
+            color: var(--purple-700) !important;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            background: var(--purple-100);
+            padding: 10px 14px;
+            border-radius: 10px;
+            border-left: 4px solid var(--purple-900);
+            visibility: visible !important;
+            opacity: 1 !important;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ICONOS Y GRUPOS --- */
         .input-group-text {
             border-radius: 12px 0 0 12px;
             border: 2px solid #eadcf2;
             border-right: none;
             background-color: #fdf9ff;
             color: var(--purple-700);
+            transition: all 0.2s ease;
+        }
+
+        /* El icono también se pone morado si hay error */
+        .input-group:has(.is-invalid) .input-group-text {
+            border-color: var(--purple-700) !important;
+            color: var(--purple-900) !important;
+            background-color: var(--purple-100) !important;
         }
 
         .with-icon { border-left: none; }
@@ -115,12 +153,6 @@
             box-shadow: 0 12px 25px rgba(75, 28, 113, 0.3);
             color: white;
         }
-
-        .alert {
-            border-radius: 12px;
-            font-size: 0.85rem;
-            border: none;
-        }
     </style>
 </head>
 <body>
@@ -131,13 +163,7 @@
     </a>
 
     <h2 class="bebas mb-1" style="color: var(--purple-900); font-size: 2.5rem;">BIENVENIDO</h2>
-    <p class="text-muted mb-4" style="font-size: 0.95rem;">Accede al panel de administración</p>
-
-    @if ($errors->any())
-        <div class="alert alert-danger text-start py-2 px-3 mb-4 shadow-sm">
-            <i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first() }}
-        </div>
-    @endif
+    <p class="text-muted mb-4" style="font-size: 0.95rem;">Panel de Biblioteca</p>
 
     <form action="{{ route('login') }}" method="POST" class="text-start">
         @csrf
@@ -145,17 +171,35 @@
         <div class="mb-3">
             <label class="form-label fw-bold">Correo Electrónico</label>
             <div class="input-group">
-                <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
-                <input type="email" name="correo" class="form-control with-icon" placeholder="" value="{{ old('correo') }}" required autofocus>
+                <span class="input-group-text">
+                    <i class="fa-solid fa-envelope"></i>
+                </span>
+                <input type="email" name="correo" 
+                       class="form-control with-icon @error('correo') is-invalid @enderror" 
+                       value="{{ old('correo') }}" placeholder="correo@ejemplo.com" autofocus>
             </div>
+            @error('correo')
+                <div class="zapoteca-error">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> {{ $message }}
+                </div>
+            @enderror
         </div>
 
         <div class="mb-4">
             <label class="form-label fw-bold">Contraseña</label>
             <div class="input-group">
-                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input type="password" name="contrasena" class="form-control with-icon" placeholder="" required>
+                <span class="input-group-text">
+                    <i class="fa-solid fa-lock"></i>
+                </span>
+                <input type="password" name="contrasena" 
+                       class="form-control with-icon @error('contrasena') is-invalid @enderror" 
+                       placeholder="••••••••">
             </div>
+            @error('contrasena')
+                <div class="zapoteca-error">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i> {{ $message }}
+                </div>
+            @enderror
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4" style="font-size: 0.85rem;">
@@ -176,6 +220,5 @@
     </p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

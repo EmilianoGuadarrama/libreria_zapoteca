@@ -15,7 +15,8 @@
     <style>
         :root {
             --zapoteca-dark: #4b1c71;
-            --zapoteca-light: #b57edc;
+            --zapoteca-light: #7f4ca5;
+            --purple-500: #b57edc;
             --purple-100: #fff0ff;
             --text-dark: #2d1f3a;
             --text-muted: #7a6a88;
@@ -52,7 +53,7 @@
             transition: color 0.3s;
         }
 
-        .nav-link:hover { color: var(--zapoteca-light); }
+        .nav-link:hover { color: var(--purple-500); }
 
         .btn-nav {
             font-family: var(--font-display);
@@ -85,6 +86,7 @@
         }
 
         .hero-section { flex: 1; display: flex; align-items: center; padding: 40px 0; }
+        
         .hero-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -100,6 +102,22 @@
         .hero-card::before {
             content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
             background: linear-gradient(90deg, var(--zapoteca-dark), var(--zapoteca-light));
+        }
+
+        /* Alerta Personalizada */
+        .zapoteca-alert {
+            background: var(--purple-100);
+            border: 2px solid var(--zapoteca-light);
+            color: var(--zapoteca-dark);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .hero-title { font-family: var(--font-display); font-size: 5rem; color: var(--zapoteca-dark); line-height: 0.85; margin-bottom: 10px; }
@@ -130,16 +148,11 @@
         }
 
         @keyframes floating { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } }
-        .blob-bg { position: absolute; z-index: -1; width: 130%; opacity: 0.35; fill: var(--zapoteca-light); }
+        .blob-bg { position: absolute; z-index: -1; width: 130%; opacity: 0.35; fill: var(--purple-500); }
 
-        /* Estilo para el botón de logout tipo link en el dropdown */
-        .btn-logout {
-            background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; width: 100%; text-align: left;
-        }
+        .bebas { font-family: var(--font-display); }
 
         @media (max-width: 991px) {
-            .navbar-nav { padding: 20px 0; text-align: center; }
-            .nav-item { margin-bottom: 12px; }
             .hero-card { padding: 40px 25px; text-align: center; }
             .hero-title { font-size: 3.5rem; }
             .hero-text { max-width: 100%; }
@@ -160,14 +173,9 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Catálogo</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Novedades</a>
-                </li>
+                <li class="nav-item"><a class="nav-link" href="#">Catálogo</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Novedades</a></li>
 
-                {{-- LÓGICA DINÁMICA DE BOTONES --}}
                 @guest
                     <li class="nav-item ms-lg-4">
                         <a href="{{ route('login') }}" class="btn-nav btn-login-nav">
@@ -175,9 +183,7 @@
                         </a>
                     </li>
                     <li class="nav-item ms-lg-2">
-                        <a href="{{ route('register') }}" class="btn-nav btn-signup-nav">
-                            CREAR CUENTA
-                        </a>
+                        <a href="{{ route('register') }}" class="btn-nav btn-signup-nav">CREAR CUENTA</a>
                     </li>
                 @endguest
 
@@ -208,20 +214,28 @@
 <main class="hero-section">
     <div class="container">
         <div class="hero-card">
+            
+            {{-- SECCIÓN DE ALERTAS DINÁMICAS --}}
+            @if (session('status') || session('info') || session('success'))
+                <div class="zapoteca-alert text-center shadow-sm">
+                    <i class="fa-solid fa-circle-check mb-2" style="font-size: 2.5rem; color: var(--zapoteca-dark);"></i>
+                    <h4 class="bebas">¡Aviso de Zapoteca!</h4>
+                    <p class="mb-0 fw-bold">{{ session('status') ?? session('info') ?? session('success') }}</p>
+                </div>
+            @endif
+
             <div class="row align-items-center">
                 <div class="col-lg-6 order-2 order-lg-1">
-                    {{-- SALUDO PERSONALIZADO --}}
                     @auth
                         <h1 class="hero-title">¡HOLA DE <br>NUEVO!</h1>
                         <h2 class="hero-subtitle">{{ Auth::user()->persona->nombre }}</h2>
                     @else
-                        <h1 class="hero-title">BIENVENIDO</h1>
-                        <h1 class="hero-title">lIBRERIA <br>ZAPOTECA</h1>
+                        <h1 class="hero-title">LIBRERÍA <br>ZAPOTECA</h1>
                         <h2 class="hero-subtitle">La sabiduría de leer</h2>
                     @endauth
 
                     <p class="hero-text">
-                        Explora una colección curada de historias que trascienden el tiempo. Desde clásicos inmortales hasta las novedades más esperadas, encuentra tu próximo libro favorito en el portal líder para apasionados de la lectura.
+                        Explora una colección curada de historias que trascienden el tiempo. Desde clásicos inmortales hasta las novedades más esperadas, encuentra tu próximo libro favorito.
                     </p>
                     <a href="#" class="btn-zapoteca-main">
                         EXPLORAR CATÁLOGO <i class="fa-solid fa-arrow-right-long ms-2"></i>
@@ -240,17 +254,10 @@
 </main>
 
 <footer class="text-center py-4" style="color: var(--zapoteca-dark); opacity: 0.7; font-size: 0.85rem;">
-    <p class="bebas m-0">© 2026 - LIBRERÍA ZAPOTECA | SOFTWARE SOLUTIONS</p>
+    <p class="bebas m-0">© {{ date('Y') }} - LIBRERÍA ZAPOTECA | SOFTWARE SOLUTIONS</p>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-{{-- ALERTA DE ÉXITO --}}
-@if(session('success'))
-    <script>
-        alert("{{ session('success') }}");
-    </script>
-@endif
 
 </body>
 </html>

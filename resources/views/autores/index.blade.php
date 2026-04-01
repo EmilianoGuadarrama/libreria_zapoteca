@@ -34,7 +34,7 @@
                         {{ $autor->persona->nombre }} {{ $autor->persona->apellido_paterno }} {{ $autor->persona->apellido_materno }}
                     </td>
                     <td>{{ $autor->persona->genero }}</td>
-                    <td>{{ $autor->nacionalidad->nombre }}</td>
+                   <td>{{ $autor->nacionalidad->nombre ?? 'Sin nacionalidad' }}</td>
                     <td class="text-end">
                         <button class="btn btn-link p-0 fs-5 me-3" data-bs-toggle="modal" data-bs-target="#modalEdit{{ $autor->id }}">
                             <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
