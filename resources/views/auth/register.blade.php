@@ -221,9 +221,9 @@
     <div class="mb-4">
         <label class="form-label fw-bold">Tipo de Cuenta</label>
         <select name="rol_id" class="form-select @error('rol_id') is-invalid @enderror">
-            <option value="3" {{ old('rol_id') == '3' ? 'selected' : '' }}>Cliente (Acceso inmediato)</option>
-            <option value="2" {{ old('rol_id') == '2' ? 'selected' : '' }}>Usuario Staff (Requiere aprobación)</option>
-            <option value="1" {{ old('rol_id') == '1' ? 'selected' : '' }}>Administrador (Requiere aprobación)</option>
+           
+            <option value="2" {{ old('rol_id') == '2' ? 'selected' : '' }}>Usuario</option>
+            <option value="1" {{ old('rol_id') == '1' ? 'selected' : '' }}>Administrador</option>
         </select>
         @error('rol_id') <div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $message }}</div> @enderror
     </div>
