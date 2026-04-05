@@ -183,7 +183,10 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Cantidad (Stock Actual):</label>
-                                    <input type="number" name="cantidad" class="form-control rounded-3 bg-light" value="{{ $lote->cantidad }}" min="0" required>
+                                    <input type="number" name="cantidad" class="form-control rounded-3 text-muted" style="background-color: #e9ecef; cursor: not-allowed;" value="{{ $lote->cantidad }}" readonly>
+                                    <small class="text-danger mt-1 d-block" style="font-size: 0.85rem;">
+                                        <i class="fa-solid fa-lock me-1"></i> Por normas de control, la cantidad no es editable. Si hay un error de captura, elimine el lote y regístrelo nuevamente.
+                                    </small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Ubicación Fija:</label>

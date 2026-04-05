@@ -199,11 +199,93 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .alert-container {
+        margin-bottom: 24px;
+        animation: slideInDown 0.4s ease-out;
+    }
+
+    .custom-alert {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        background-color: #fef2f2;
+        border-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .custom-alert::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background-color: #ef4444;
+    }
+
+    .custom-alert .alert-icon {
+        font-size: 1.8rem;
+        margin-right: 16px;
+        color: #ef4444;
+    }
+
+    .custom-alert .alert-content {
+        flex-grow: 1;
+    }
+
+    .custom-alert .alert-title {
+        font-weight: 700;
+        margin-bottom: 2px;
+        font-size: 1.1rem;
+        font-family: var(--font-display, sans-serif);
+    }
+
+    .custom-alert .alert-message {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .custom-alert .close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s, transform 0.2s;
+        padding: 8px;
+        color: #991b1b;
+    }
+
+    .custom-alert .close-btn:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    @keyframes slideInDown {
+        from { transform: translateY(-15px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
 </style>
 
-@if(session('error'))
-    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
-        <i class="fa-solid fa-triangle-exclamation"></i> <strong>Error:</strong> {{ session('error') }}
+@if(session('error') || $errors->any())
+    <div class="alert-container">
+        <div class="custom-alert">
+            <i class="fa-solid fa-circle-exclamation alert-icon"></i>
+            <div class="alert-content">
+                <div class="alert-title">¡Atención!</div>
+                <div class="alert-message">{{ session('error') ?? $errors->first() }}</div>
+            </div>
+            <button type="button" class="close-btn" onclick="this.closest('.alert-container').remove()" title="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
     </div>
 @endif
 

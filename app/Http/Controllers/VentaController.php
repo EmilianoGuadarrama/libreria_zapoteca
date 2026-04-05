@@ -56,15 +56,13 @@ class VentaController extends Controller
                 $edicionId = $item['edicion_id'];
                 $cantidadRequerida = $item['cantidad'];
                 $precioUnitario = $item['precio_unitario'];
-
-                // --- SOLUCIÓN PARA ORACLE ORA-00933 ---
-                // Obtenemos los lotes con el bloqueo, pero SIN el orderBy en SQL
-                // Luego usamos ->sortBy() para ordenarlos en PHP (PEPS)
+                $edicion = Edicion::with('libro')->findOrFail($edicionId);
+                $tituloLibro = $edicion->libro->titulo ?? 'Libro desconocido';
                 $lotesDisponibles = Lote::where('edicion_id', $edicionId)
                                         ->where('cantidad', '>', 0)
                                         ->lockForUpdate() 
                                         ->get()
-                                        ->sortBy('fecha_entrada'); // Orden PEPS en la colección de Laravel
+                                        ->sortBy('fecha_entrada'); 
 
                 $cantidadFaltante = $cantidadRequerida;
 
@@ -83,7 +81,6 @@ class VentaController extends Controller
                         'subtotal' => $subtotalParcial
                     ]);
 
-                    // Actualizar el lote
                     $lote->cantidad -= $cantidadATomar;
                     $lote->save();
 
@@ -91,23 +88,21 @@ class VentaController extends Controller
                 }
 
                 if ($cantidadFaltante > 0) {
-                    throw new Exception("Stock insuficiente en lotes para la edición ID: {$edicionId}.");
+                    $stockReal = $cantidadRequerida - $cantidadFaltante;              
+                    throw new Exception("Stock insuficiente para el libro '{$tituloLibro}'. Solicitaste {$cantidadRequerida}, pero el sistema detectó solo {$stockReal} disponibles.");
                 }
 
-                // Actualizar inventario global
-                $edicion = Edicion::findOrFail($edicionId);
                 $edicion->existencias -= $cantidadRequerida;
                 $edicion->save();
             }
 
             DB::commit();
 
-            // Redirigimos al index con éxito
             return redirect()->route('ventas.index')->with('success', 'Venta registrada correctamente');
 
         } catch (Exception $e) {
             DB::rollBack();
-            // Si quieres ver el error real si vuelve a fallar algo, usa: dd($e->getMessage());
+
             return back()->with('error', 'Error al procesar la venta: ' . $e->getMessage());
         }
     }

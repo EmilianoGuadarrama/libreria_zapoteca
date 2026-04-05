@@ -69,7 +69,8 @@ class LoteController extends Controller
     {
         $request->validate([
             'codigo' => 'required|string|max:16|unique:lotes,codigo,' . $id,
-            'cantidad' => 'required|integer|min:0',
+            'edicion_id' => 'required|exists:ediciones,id',
+            'compra_id' => 'required|exists:compras,id',
             'ubicacion_id' => 'required|exists:ubicaciones,id',
         ]);
 
@@ -78,20 +79,10 @@ class LoteController extends Controller
 
             $lote = Lote::findOrFail($id);
 
-            // Si la cantidad cambió, ajustamos el inventario global de la edición
-            if ($lote->cantidad != $request->cantidad) {
-                // Calculamos la diferencia (Ej: Si había 10 y ahora 15, la diferencia es +5. Si ahora es 8, la diferencia es -2)
-                $diferencia = $request->cantidad - $lote->cantidad;
-                
-                $edicion = Edicion::findOrFail($lote->edicion_id);
-                $edicion->existencias += $diferencia;
-                $edicion->save();
-            }
-
-            // Actualizamos el lote
             $lote->update([
                 'codigo' => strtoupper($request->codigo),
-                'cantidad' => $request->cantidad,
+                'edicion_id' => $request->edicion_id,
+                'compra_id' => $request->compra_id,
                 'ubicacion_id' => $request->ubicacion_id,
             ]);
 
