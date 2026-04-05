@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Venta;
 use App\Models\DetalleVenta;
-use App\Models\Lote;        
-use App\Models\Edicion;   
+use App\Models\Lote;
+use App\Models\Edicion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class VentaController extends Controller
 {
@@ -21,7 +22,7 @@ class VentaController extends Controller
 
     public function create()
     {
-        return view('ventas.create'); 
+        return view('ventas.create');
     }
 
     public function store(Request $request)
@@ -36,7 +37,7 @@ class VentaController extends Controller
             return back()->with('error', 'El carrito de ventas está vacío.');
         }
 
-        $folio = 'VNT-' . strtoupper(uniqid()); 
+        $folio = 'VNT-' . strtoupper(uniqid());
         $fecha = Carbon::now()->format('Y-m-d H:i:s');
         $usuarioId = auth()->id() ?? 1;
 
@@ -56,19 +57,21 @@ class VentaController extends Controller
                 $edicionId = $item['edicion_id'];
                 $cantidadRequerida = $item['cantidad'];
                 $precioUnitario = $item['precio_unitario'];
-                $edicion = Edicion::with('libro')->findOrFail($edicionId);
-                $tituloLibro = $edicion->libro->titulo ?? 'Libro desconocido';
+
+                // --- SOLUCIÓN PARA ORACLE ORA-00933 ---
+                // Obtenemos los lotes con el bloqueo, pero SIN el orderBy en SQL
+                // Luego usamos ->sortBy() para ordenarlos en PHP (PEPS)
                 $lotesDisponibles = Lote::where('edicion_id', $edicionId)
-                                        ->where('cantidad', '>', 0)
-                                        ->lockForUpdate() 
-                                        ->get()
-                                        ->sortBy('fecha_entrada'); 
+                    ->where('cantidad', '>', 0)
+                    ->lockForUpdate()
+                    ->get()
+                    ->sortBy('fecha_entrada'); // Orden PEPS en la colección de Laravel
 
                 $cantidadFaltante = $cantidadRequerida;
 
                 foreach ($lotesDisponibles as $lote) {
                     if ($cantidadFaltante <= 0) {
-                        break; 
+                        break;
                     }
 
                     $cantidadATomar = min($lote->cantidad, $cantidadFaltante);
@@ -81,6 +84,7 @@ class VentaController extends Controller
                         'subtotal' => $subtotalParcial
                     ]);
 
+                    // Actualizar el lote
                     $lote->cantidad -= $cantidadATomar;
                     $lote->save();
 
@@ -88,21 +92,22 @@ class VentaController extends Controller
                 }
 
                 if ($cantidadFaltante > 0) {
-                    $stockReal = $cantidadRequerida - $cantidadFaltante;              
-                    throw new Exception("Stock insuficiente para el libro '{$tituloLibro}'. Solicitaste {$cantidadRequerida}, pero el sistema detectó solo {$stockReal} disponibles.");
+                    throw new Exception("Stock insuficiente en lotes para la edición ID: {$edicionId}.");
                 }
 
+                // Actualizar inventario global
+                $edicion = Edicion::findOrFail($edicionId);
                 $edicion->existencias -= $cantidadRequerida;
                 $edicion->save();
             }
 
             DB::commit();
 
+            // Redirigimos al index con éxito
             return redirect()->route('ventas.index')->with('success', 'Venta registrada correctamente');
-
         } catch (Exception $e) {
             DB::rollBack();
-
+            // Si quieres ver el error real si vuelve a fallar algo, usa: dd($e->getMessage());
             return back()->with('error', 'Error al procesar la venta: ' . $e->getMessage());
         }
     }
@@ -157,17 +162,17 @@ class VentaController extends Controller
         }
 
         $ediciones = Edicion::with('libro')
-            ->where('existencias', '>', 0) 
-            ->where(function($query) use ($termino) {
+            ->where('existencias', '>', 0)
+            ->where(function ($query) use ($termino) {
                 $query->whereRaw('LOWER(isbn) LIKE ?', ["%{$termino}%"])
-                      ->orWhereHas('libro', function($q) use ($termino) {
-                          $q->whereRaw('LOWER(titulo) LIKE ?', ["%{$termino}%"]);
-                      });
+                    ->orWhereHas('libro', function ($q) use ($termino) {
+                        $q->whereRaw('LOWER(titulo) LIKE ?', ["%{$termino}%"]);
+                    });
             })
             ->take(10)
             ->get();
 
-        $resultados = $ediciones->map(function($edicion) {
+        $resultados = $ediciones->map(function ($edicion) {
             return [
                 'edicion_id' => $edicion->id,
                 'isbn' => $edicion->isbn,
@@ -178,5 +183,49 @@ class VentaController extends Controller
         });
 
         return response()->json($resultados);
+    }
+
+    //Sección de reportes
+    public function reporte()
+    {
+        $datos = DB::select("
+        SELECT 
+            v.id as venta,
+            b.titulo as libro,
+            SUM(dv.cantidad) as total_vendidos,
+            SUM(dv.subtotal) as total_venta,
+            v.created_at as fecha
+        FROM VENTAS v
+        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
+        JOIN LOTES l ON dv.lote_id = l.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY v.id, b.titulo, v.created_at
+        ORDER BY v.created_at DESC
+    ");
+
+        return view('reportes.ventas', compact('datos'));
+    }
+
+    public function reportePDF()
+    {
+        $datos = DB::select("
+        SELECT 
+            v.id as venta,
+            b.titulo as libro,
+            SUM(dv.cantidad) as total_vendidos,
+            SUM(dv.subtotal) as total_venta,
+            v.created_at as fecha
+        FROM VENTAS v
+        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
+        JOIN LOTES l ON dv.lote_id = l.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY v.id, b.titulo, v.created_at
+        ORDER BY v.created_at DESC
+    ");
+
+        $pdf = Pdf::loadView('reportes.ventas_pdf', compact('datos'));
+        return $pdf->download('reporte_ventas.pdf');
     }
 }

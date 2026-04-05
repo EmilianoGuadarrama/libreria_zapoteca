@@ -9,6 +9,8 @@ use App\Models\Ubicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class LoteController extends Controller
 {
@@ -16,9 +18,9 @@ class LoteController extends Controller
     {
         // Traemos los lotes con sus relaciones para la tabla
         $lotes = Lote::with(['edicion.libro', 'compra', 'ubicacion', 'usuario'])
-                     ->orderBy('id', 'desc')
-                     ->paginate(10);
-                     
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
         // Traemos catálogos para llenar los <select> del modal
         $ediciones = Edicion::with('libro')->get();
         $compras = Compra::orderBy('id', 'desc')->get();
@@ -58,7 +60,6 @@ class LoteController extends Controller
             DB::commit();
 
             return redirect()->route('lotes.index')->with('success', 'Lote registrado y stock actualizado exitosamente.');
-
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al registrar el lote: ' . $e->getMessage())->withInput();
@@ -89,7 +90,6 @@ class LoteController extends Controller
             DB::commit();
 
             return redirect()->route('lotes.index')->with('success', 'Lote actualizado correctamente.');
-
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al actualizar el lote: ' . $e->getMessage());
@@ -115,10 +115,45 @@ class LoteController extends Controller
             DB::commit();
 
             return redirect()->route('lotes.index')->with('success', 'Lote eliminado y stock ajustado correctamente.');
-
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al eliminar el lote: ' . $e->getMessage());
         }
+    }
+
+    public function reporte()
+    {
+        $lotes = DB::select("
+        SELECT 
+            l.id as lote,
+            b.titulo as libro,
+            l.cantidad,
+            l.fecha_entrada
+        FROM LOTES l
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        ORDER BY b.titulo
+    ");
+
+        return view('reportes.lotes', compact('lotes'));
+    }
+
+    public function reportePDF()
+    {
+        $lotes = DB::select("
+        SELECT 
+            l.id as lote,
+            b.titulo as libro,
+            l.cantidad,
+            l.fecha_entrada
+        FROM LOTES l
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        ORDER BY b.titulo
+    ");
+
+        $pdf = Pdf::loadView('reportes.lotes_pdf', compact('lotes'));
+
+        return $pdf->download('reporte_lotes.pdf');
     }
 }
