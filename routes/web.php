@@ -41,23 +41,21 @@ Route::middleware(['auth'])->group(function () {
         return view('layouts.dashboard');
     })->name('dashboard');
 
-    //REPORTES
+    //Rutas de los Reportes
 
-    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
-
-    // VENTAS
+    // Ventas
     Route::get('/ventas/reporte', [VentaController::class, 'reporte'])->name('ventas.reporte');
     Route::get('/ventas/reporte/pdf', [VentaController::class, 'reportePDF'])->name('ventas.reporte.pdf');
 
-    // COMPRAS
+    // Compras
     Route::get('/compras/reporte', [CompraController::class, 'reporte'])->name('compras.reporte');
     Route::get('/compras/reporte/pdf', [CompraController::class, 'reportePDF'])->name('compras.reporte.pdf');
 
-    // LOTES
+    // Lotes
     Route::get('/reportes/lotes', [LoteController::class, 'reporte'])->name('lotes.reporte');
     Route::get('/reportes/lotes/pdf', [LoteController::class, 'reportePDF'])->name('lotes.reporte.pdf');
 
-    // MERMAS
+    // Mermas
     Route::get('reportes/mermas', [MermaController::class, 'reporte'])->name('reportes.mermas');
     Route::get('/mermas/reporte/pdf', [MermaController::class, 'reportePDF'])->name('mermas.reporte.pdf');
 
