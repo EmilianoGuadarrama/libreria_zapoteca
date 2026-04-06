@@ -15,7 +15,6 @@ use App\Http\Controllers\AutorController;
 use App\Http\Controllers\NacionalidadController;
 use App\Http\Controllers\PaisController;
 use App\Http\Controllers\AsignaAutorController;
-use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\MermaController;
 use App\Http\Controllers\GeneroController;
 use App\Http\Controllers\SubgeneroController;
