@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class CompraController extends Controller
 {
@@ -18,9 +20,9 @@ class CompraController extends Controller
         $compras = Compra::with(['proveedor', 'usuario'])
             ->orderBy('id', 'desc')
             ->paginate(10);
-        
+
         $proveedores = Proveedor::where('estado', 'Activo')->get();
-        
+
         $ediciones = Edicion::with('libro')->get();
 
         return view('compras.index', compact('compras', 'proveedores', 'ediciones'));
@@ -28,7 +30,7 @@ class CompraController extends Controller
     public function create()
     {
         $proveedores = Proveedor::where('estado', 'Activo')->get();
-        
+
         $ediciones = Edicion::with('libro')->get();
 
         return view('compras.create', compact('proveedores', 'ediciones'));
@@ -63,7 +65,7 @@ class CompraController extends Controller
                 'fecha_compra'  => $request->fecha_compra,
                 'total_compra'  => $totalCalculado,
                 'usuario_id'    => auth()->id() ?? 1,
-                'estado'        => 'Recibida' 
+                'estado'        => 'Recibida'
             ]);
 
             foreach ($datosCarrito as $item) {
@@ -73,14 +75,12 @@ class CompraController extends Controller
                     'cantidad'   => $item['cantidad'],
                     'subtotal'   => $item['cantidad'] * $item['precio_costo']
                 ]);
-                
             }
 
             DB::commit();
 
             return redirect()->route('compras.index')
                 ->with('success', 'Compra #' . $compra->folio_factura . ' registrada exitosamente.');
-
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al registrar la compra: ' . $e->getMessage())->withInput();
@@ -114,7 +114,7 @@ class CompraController extends Controller
             DB::beginTransaction();
 
             $compra = Compra::findOrFail($id);
-            
+
             if ($compra->lotes()->count() > 0) {
                 return back()->with('error', 'No se puede eliminar la compra porque ya tiene lotes de inventario asociados.');
             }
@@ -124,10 +124,49 @@ class CompraController extends Controller
 
             DB::commit();
             return redirect()->route('compras.index')->with('success', 'Compra eliminada correctamente.');
-
         } catch (Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error al eliminar la compra: ' . $e->getMessage());
         }
+    }
+
+    public function reporte()
+    {
+        $compras = DB::select("
+        SELECT 
+            c.id as compra,
+            b.titulo as libro,
+            SUM(l.cantidad) as total_cantidad,
+            c.created_at as fecha
+        FROM COMPRAS c
+        JOIN LOTES l ON l.compra_id = c.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY c.id, b.titulo, c.created_at
+        ORDER BY c.created_at DESC
+    ");
+
+        return view('reportes.compras', compact('compras'));
+    }
+
+    public function reportePDF()
+    {
+        $compras = DB::select("
+        SELECT 
+            c.id as compra,
+            b.titulo as libro,
+            SUM(l.cantidad) as total_cantidad,
+            c.created_at as fecha
+        FROM COMPRAS c
+        JOIN LOTES l ON l.compra_id = c.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY c.id, b.titulo, c.created_at
+        ORDER BY c.created_at DESC
+    ");
+
+        $pdf = Pdf::loadView('reportes.compras_pdf', compact('compras'));
+
+        return $pdf->download('reporte_compras.pdf');
     }
 }

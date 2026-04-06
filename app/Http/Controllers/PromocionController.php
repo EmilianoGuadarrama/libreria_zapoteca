@@ -13,7 +13,7 @@ class PromocionController extends Controller
     {
         $promociones = DB::table('promociones as p')
             ->leftJoin('usuarios as u', 'p.autorizado_por_id', '=', 'u.id')
-            ->leftJoin('personas as per', 'u.persona_id', '=', 'per.id_persona')
+            ->leftJoin('personas as per', 'u.persona_id', '=', 'per.id')
             ->select('p.*', 'per.nombre as nombre_autorizado', 'per.apellido_paterno as ape_paterno')
             ->whereNull('p.deleted_at')
             ->orderBy('p.nombre', 'asc')

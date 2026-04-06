@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class MermaController extends Controller
 {
@@ -130,5 +132,45 @@ class MermaController extends Controller
             ]);
 
         return redirect()->route('mermas.index')->with('status', 'Merma eliminada correctamente.');
+    }
+
+
+    //Sección para los reportes]
+    public function reporte()
+    {
+        $datos = DB::select("
+        SELECT 
+            b.titulo as libro,
+            COUNT(m.id) as total_mermas,
+            SUM(m.cantidad) as cantidad_total
+        FROM MERMAS m
+        JOIN LOTES l ON m.lote_id = l.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY b.titulo
+        ORDER BY b.titulo
+    ");
+
+        return view('reportes.mermas', compact('datos'));
+    }
+
+    public function reportePDF()
+    {
+        $datos = DB::select("
+        SELECT 
+            b.titulo as libro,
+            COUNT(m.id) as total_mermas,
+            SUM(m.cantidad) as cantidad_total
+        FROM MERMAS m
+        JOIN LOTES l ON m.lote_id = l.id
+        JOIN EDICIONES e ON l.edicion_id = e.id
+        JOIN LIBROS b ON e.libro_id = b.id
+        GROUP BY b.titulo
+        ORDER BY b.titulo
+    ");
+
+        $pdf = Pdf::loadView('reportes.mermas_pdf', compact('datos'));
+
+        return $pdf->download('reporte_mermas.pdf');
     }
 }
