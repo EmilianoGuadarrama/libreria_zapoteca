@@ -292,11 +292,6 @@ $menuCompras = request()->routeIs('compras.*') || request()->routeIs('detalle_co
                     <span>Libros</span>
                 </a>
 
-                <a href="{{ Route::has('asigna_subgenero.index') ? route('asigna_subgenero.index') : '#' }}" class="{{ request()->routeIs('asigna_subgenero.*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-diagram-project"></i>
-                    <span>Asigna subgénero</span>
-                </a>
-
                 <a href="{{ Route::has('asigna_autor.index') ? route('asigna_autor.index') : '#' }}"
                     class="{{ request()->routeIs('asigna_autor.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-pen-nib"></i>
