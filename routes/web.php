@@ -20,6 +20,7 @@ use App\Http\Controllers\GeneroController;
 use App\Http\Controllers\SubgeneroController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\AsignaSubgeneroController;
+use App\Http\Controllers\AdminController;
 
 // Rutas públicas
 Route::get('/', function () {
@@ -72,9 +73,10 @@ Route::middleware(['auth'])->group(function () {
     // ADMIN
     // =========================
     Route::middleware(['rol:Administrador'])->group(function () {
-        Route::get('/admin/usuarios-pendientes', [AuthController::class, 'indexPendientes'])->name('admin.pendientes');
-        Route::patch('/admin/usuarios/{id}/activar', [AuthController::class, 'activarUsuario'])->name('admin.activar');
-    });
+    Route::get('/admin/usuarios-pendientes', [AdminController::class, 'indexPendientes'])->name('admin.pendientes');
+    Route::patch('/admin/usuarios/{id}/activar', [AdminController::class, 'activarUsuario'])->name('admin.activar'); 
+    Route::delete('/admin/rechazar/{id}', [AdminController::class, 'rechazar'])->name('admin.rechazar');
+});
 
     // =========================
     // LECTURA DE CATÁLOGO
