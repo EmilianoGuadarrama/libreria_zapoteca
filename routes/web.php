@@ -16,7 +16,10 @@ use App\Http\Controllers\NacionalidadController;
 use App\Http\Controllers\PaisController;
 use App\Http\Controllers\AsignaAutorController;
 use App\Http\Controllers\MermaController;
-
+use App\Http\Controllers\GeneroController;
+use App\Http\Controllers\SubgeneroController;
+use App\Http\Controllers\UbicacionController;
+use App\Http\Controllers\AsignaSubgeneroController;
 
 // Rutas públicas
 Route::get('/', function () {
@@ -31,7 +34,6 @@ Route::middleware(['web'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-
 // Rutas protegidas
 Route::middleware(['auth'])->group(function () {
 
@@ -41,9 +43,9 @@ Route::middleware(['auth'])->group(function () {
         return view('layouts.dashboard');
     })->name('dashboard');
 
-    //Rutas de los Reportes
+    //REPORTES
 
-    // Ventas
+    // VENTAS
     Route::get('/ventas/reporte', [VentaController::class, 'reporte'])->name('ventas.reporte');
     Route::get('/ventas/reporte/pdf', [VentaController::class, 'reportePDF'])->name('ventas.reporte.pdf');
 
@@ -55,18 +57,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reportes/lotes', [LoteController::class, 'reporte'])->name('lotes.reporte');
     Route::get('/reportes/lotes/pdf', [LoteController::class, 'reportePDF'])->name('lotes.reporte.pdf');
 
-    // Mermas
+    // MERMAS
     Route::get('reportes/mermas', [MermaController::class, 'reporte'])->name('reportes.mermas');
     Route::get('/mermas/reporte/pdf', [MermaController::class, 'reportePDF'])->name('mermas.reporte.pdf');
-
 
     // =========================
     // VENTAS
     // =========================
     Route::get('/ventas/buscar-libro', [VentaController::class, 'buscarLibro'])->name('ventas.buscar_libro');
-    Route::get('ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
+    Route::get('/ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
     Route::resource('ventas', VentaController::class);
-
 
     // =========================
     // ADMIN
@@ -76,14 +76,25 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/admin/usuarios/{id}/activar', [AuthController::class, 'activarUsuario'])->name('admin.activar');
     });
 
+    // =========================
+    // LECTURA DE CATÁLOGO
+    // =========================
+    Route::middleware(['rol:Administrador,Gerente,Bibliotecario'])->group(function () {
+        Route::get('/libros', [LibroController::class, 'index'])->name('libros.index');
+        Route::get('/clasificaciones', [ClasificacionController::class, 'index'])->name('clasificaciones.index');
+        Route::get('/generos', [GeneroController::class, 'index'])->name('generos.index');
+        Route::get('/subgeneros', [SubgeneroController::class, 'index'])->name('subgeneros.index');
+        Route::get('/ubicaciones', [UbicacionController::class, 'index'])->name('ubicaciones.index');
+        Route::get('/asigna_subgeneros', [AsignaSubgeneroController::class, 'index'])->name('asigna_subgeneros.index');
+    });
 
     // =========================
     // ADMIN / GERENTE
     // =========================
     Route::middleware(['rol:Administrador,Gerente'])->group(function () {
-        Route::resource('libros', LibroController::class);
+        Route::resource('libros', LibroController::class)->except(['index']);
         Route::resource('promociones', PromocionController::class);
-        Route::resource('clasificaciones', ClasificacionController::class);
+        Route::resource('clasificaciones', ClasificacionController::class)->except(['index']);
         Route::resource('asigna_promociones', AsignaPromocionController::class);
         Route::resource('proveedores', ProveedorController::class);
         Route::resource('paises', PaisController::class);
@@ -91,17 +102,11 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('autores', AutorController::class);
         Route::resource('asigna_autor', AsignaAutorController::class);
         Route::resource('mermas', MermaController::class);
+        Route::resource('generos', GeneroController::class)->except(['index']);
+        Route::resource('subgeneros', SubgeneroController::class)->except(['index']);
+        Route::resource('ubicaciones', UbicacionController::class)->except(['index']);
+        Route::resource('asigna_subgeneros', AsignaSubgeneroController::class)->except(['index']);
     });
-
-
-    // =========================
-    // ADMIN / BIBLIOTECARIO
-    // =========================
-    Route::middleware(['rol:Administrador,Bibliotecario'])->group(function () {
-        Route::get('/libros', [LibroController::class, 'index'])->name('libros.index');
-        Route::get('/clasificaciones', [ClasificacionController::class, 'index'])->name('clasificaciones.index');
-    });
-
 
     // =========================
     // LOTES
@@ -112,7 +117,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/admin/lotes/{id}', [LoteController::class, 'update'])->name('lotes.update');
         Route::delete('/admin/lotes/{id}', [LoteController::class, 'destroy'])->name('lotes.destroy');
     });
-
 
     // =========================
     // COMPRAS
