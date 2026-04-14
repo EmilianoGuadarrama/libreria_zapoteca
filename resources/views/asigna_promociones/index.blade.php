@@ -1,14 +1,17 @@
 @extends('layouts.dashboard')
-
+<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 @section('dashboard-content')
     <div class="container py-4">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="mb-0 text-dark fw-bold">Libros en Oferta</h3>
-            <button type="button" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #4b1c71;"
-                    data-bs-toggle="modal" data-bs-target="#modalAssignPromocion">
-                <i class="fa-solid fa-tag me-2"></i> Aplicar Oferta a Libro
+            <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"
+                    data-bs-toggle="modal" data-bs-target="#modalAssignPromocion"
+                    title="Aplicar Oferta a Libro">
+                <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>
             </button>
+
         </div>
 
         @if(session('status'))
@@ -21,7 +24,7 @@
         @if ($errors->any())
             <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ $errors->first('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" title="Cancelar" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
 
@@ -65,7 +68,7 @@
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
                     <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-tag me-2"></i> Aplicar Oferta a Libro</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" title="Cerrar" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="{{ route('asigna_promociones.store') }}" method="post">
                     @csrf
@@ -81,10 +84,18 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libro (Edición)</label>
-                            <select name="edicion_id" class="form-select" required>
+                            <select id="select-libro" name="edicion_id" class="form-select" required>
                                 <option value="" disabled selected>-- Busca y elige un libro --</option>
                                 @foreach($ediciones as $edicion)
-                                    <option value="{{ $edicion->id }}">{{ $edicion->titulo }} - ISBN: {{ $edicion->isbn }}</option>
+                                    <option value="{{ $edicion->id }}"
+                                            data-titulo="{{ $edicion->titulo }}"
+                                            data-isbn="{{ $edicion->isbn }}"
+                                            data-precio="{{ $edicion->precio_venta }}"
+                                            data-autor="{{ $edicion->autor ?? 'N/A' }}"
+                                            data-portada="{{ $edicion->portada }}">
+
+                                        {{ $edicion->titulo }} | ISBN: {{ $edicion->isbn }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -104,10 +115,78 @@
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                     <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
                         <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-link-slash me-2"></i> Quitar Oferta</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close btn-close-white" title="Cerrar" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body p-4 text-center">
-                        <p class="fs-5 mb-1">¿Remover la oferta <strong>"{{ $asignacion->promocion_nombre }}"</strong> <br> del libro <strong>"{{ $asignacion->libro_titulo }}"</strong>?</p>
+                    <div class="modal-body p-4">
+
+                        <div class="row align-items-center">
+
+                            {{-- 📘 PORTADA --}}
+                            <div class="col-md-4 text-center mb-3 mb-md-0">
+                                @if(!empty($asignacion->portada))
+                                    <img src="{{ asset('storage/' . $asignacion->portada) }}"
+                                         alt="{{ $asignacion->alt_imagen ?? 'Portada' }}"
+                                         class="img-fluid rounded shadow-sm"
+                                         style="max-height: 160px;">
+                                @else
+                                    <div class="text-muted fst-italic">
+                                        {{ $asignacion->alt_imagen ?? 'Sin imagen' }}
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- 📖 INFO --}}
+                            <div class="col-md-8">
+
+                                <h5 class="fw-bold mb-1" style="color:#4b1c71;">
+                                    {{ $asignacion->libro_titulo }}
+                                </h5>
+
+                                <p class="text-muted small mb-2">
+                                    ISBN: {{ $asignacion->isbn }}
+                                </p>
+
+                                <p class="mb-1 small">
+                                    <strong>Autor:</strong> {{ $asignacion->autor ?? 'N/A' }}
+                                </p>
+
+                                <p class="mb-2 small">
+                                    <strong>Editorial:</strong> {{ $asignacion->editorial ?? 'N/A' }}
+                                </p>
+
+                                {{-- 💰 PRECIO --}}
+                                @php
+                                    $precio = $asignacion->precio_venta ?? 0;
+                                    $descuento = $asignacion->porcentaje_descuento ?? 0;
+                                    $precioFinal = $precio - ($precio * ($descuento / 100));
+                                @endphp
+
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="text-muted small">
+                    <del>$ {{ number_format($precio, 2) }}</del>
+                </span>
+
+                                    <span class="fw-bold text-success">
+                    $ {{ number_format($precioFinal, 2) }}
+                </span>
+
+                                    <span class="badge bg-success">
+                    -{{ $descuento }}%
+                </span>
+                                </div>
+
+                                {{-- 🎯 MENSAJE --}}
+                                <div class="mt-3 p-2 rounded" style="background-color: #fff3f3;">
+                                    <p class="mb-0 small text-danger fw-semibold">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                        Estás a punto de eliminar la promoción
+                                        <strong>"{{ $asignacion->promocion_nombre }}"</strong>
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
@@ -132,23 +211,90 @@
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+                    <div class="modal-body p-4">
 
-                    <div class="modal-body p-4 text-center">
-                        <p class="fs-5 mb-3">El libro <br><strong style="color: #4b1c71;">"{{ $data['libro_titulo'] }}"</strong><br> ya tiene una oferta activa:</p>
+                        <div class="row align-items-center">
 
-                        <div class="d-flex flex-column align-items-center gap-2 mb-4">
-                            <div class="px-4 py-2 rounded-pill border w-75" style="background-color: #fff0ff; border-color: #dbb6ee !important; color: #7a6a88;">
-                                <i class="fa-solid fa-xmark me-2" style="color: #b57edc;"></i> <del>{{ $data['old_promocion_nombre'] }}</del>
+                            {{-- 📘 PORTADA --}}
+                            <div class="col-md-4 text-center mb-3 mb-md-0">
+                                @if(!empty($data['portada']))
+                                    <img src="{{ asset('storage/' . $data['portada']) }}"
+                                         alt="{{ $data['alt_imagen'] ?? 'Portada' }}"
+                                         class="img-fluid rounded shadow-sm"
+                                         style="max-height: 160px;">
+                                @else
+                                    <div class="text-muted fst-italic">
+                                        {{ $data['alt_imagen'] ?? 'Sin imagen' }}
+                                    </div>
+                                @endif
                             </div>
 
-                            <i class="fa-solid fa-arrow-down-long" style="color: #b57edc; font-size: 1.2rem;"></i>
+                            {{-- 📖 INFO --}}
+                            <div class="col-md-8">
 
-                            <div class="px-4 py-2 rounded-pill text-white fw-bold w-75 shadow-sm" style="background-color: #4b1c71;">
-                                <i class="fa-solid fa-check me-2"></i> {{ $data['new_promocion_nombre'] }}
+                                <h5 class="fw-bold mb-1" style="color:#4b1c71;">
+                                    {{ $data['libro_titulo'] }}
+                                </h5>
+
+                                <p class="text-muted small mb-2">
+                                    ISBN: {{ $data['isbn'] }}
+                                </p>
+
+                                <p class="mb-1 small">
+                                    <strong>Autor:</strong> {{ $data['autor'] ?? 'N/A' }}
+                                </p>
+
+                                <p class="mb-2 small">
+                                    <strong>Editorial:</strong> {{ $data['editorial'] ?? 'N/A' }}
+                                </p>
+
+                                {{-- 💰 PRECIO --}}
+                                @php
+                                    $precio = $data['precio'] ?? 0;
+                                    $descuento = $data['descuento'] ?? 0;
+                                    $precioFinal = $precio - ($precio * ($descuento / 100));
+                                @endphp
+
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="text-muted small">
+                    <del>$ {{ number_format($precio, 2) }}</del>
+                </span>
+
+                                    <span class="fw-bold text-success">
+                    $ {{ number_format($precioFinal, 2) }}
+                </span>
+
+                                    <span class="badge bg-success">
+                    -{{ $descuento }}%
+                </span>
+                                </div>
+
+                                {{-- 🔄 COMPARACIÓN DE PROMOCIONES --}}
+                                <div class="d-flex align-items-center gap-2 mb-3">
+
+                <span class="badge bg-light text-dark border">
+                    {{ $data['old_promocion_nombre'] }}
+                </span>
+
+                                    <i class="fa-solid fa-arrow-right text-muted"></i>
+
+                                    <span class="badge text-white" style="background-color:#4b1c71;">
+                    {{ $data['new_promocion_nombre'] }}
+                </span>
+
+                                </div>
+
+                                {{-- 🎯 MENSAJE --}}
+                                <div class="mt-2 p-2 rounded" style="background-color: #f3e8ff;">
+                                    <p class="mb-0 small fw-semibold" style="color:#4b1c71;">
+                                        <i class="fa-solid fa-code-compare me-1"></i>
+                                        Se reemplazará la promoción actual por la nueva
+                                    </p>
+                                </div>
+
                             </div>
                         </div>
 
-                        <p class="text-muted small mb-0">¿Deseas quitar la promoción anterior y aplicar la nueva?</p>
                     </div>
 
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
@@ -176,4 +322,44 @@
             });
         </script>
     @endif
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            new TomSelect("#select-libro", {
+
+                render: {
+                    option: function(data, escape) {
+
+                        let portada = data.$option.dataset.portada
+                            ? `/storage/${data.$option.dataset.portada}`
+                            : 'https://via.placeholder.com/50x70?text=No+Img';
+
+                        return `
+                    <div class="d-flex align-items-center gap-2 p-2">
+
+                        <img src="${portada}"
+                             style="width:40px; height:55px; object-fit:cover; border-radius:6px;">
+
+                        <div>
+                            <div class="fw-bold">${escape(data.$option.dataset.titulo)}</div>
+                            <div class="small text-muted">
+                                ISBN: ${escape(data.$option.dataset.isbn)}
+                            </div>
+                            <div class="small text-success fw-semibold">
+                                $ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}
+                            </div>
+                            <div class="small text-muted">
+                                ${escape(data.$option.dataset.autor || 'N/A')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    },
+
+                    item: function(data, escape) {
+                        return `<div class="fw-semibold">${escape(data.text)}</div>`;
+                    }
+                }
+            });
+        });
+    </script>
 @endsection

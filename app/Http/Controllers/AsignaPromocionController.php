@@ -14,19 +14,40 @@ class AsignaPromocionController extends Controller
         $promociones = DB::table('promociones')->whereNull('deleted_at')->get();
         $ediciones = DB::table('ediciones')
             ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
-            ->select('ediciones.id', 'ediciones.isbn', 'libros.titulo')
+            ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
+            ->leftJoin('autores', 'asigna_autores.autor_id', '=', 'autores.id')
+            ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
+            ->select(
+                'ediciones.id',
+                'ediciones.isbn',
+                'ediciones.precio_venta',
+                'ediciones.portada',
+                'libros.titulo',
+
+                DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
+            )
             ->whereNull('ediciones.deleted_at')
             ->get();
         $asignaciones = DB::table('asigna_promociones')
             ->join('promociones', 'asigna_promociones.promocion_id', '=', 'promociones.id')
             ->join('ediciones', 'asigna_promociones.edicion_id', '=', 'ediciones.id')
             ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
+            ->leftJoin('editoriales', 'ediciones.editorial_id', '=', 'editoriales.id')
+            ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
+            ->leftJoin('autores', 'asigna_autores.autor_id', '=', 'autores.id')
+            ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
             ->select(
                 'asigna_promociones.id',
                 'promociones.nombre as promocion_nombre',
                 'promociones.porcentaje_descuento',
                 'libros.titulo as libro_titulo',
-                'ediciones.isbn'
+                'ediciones.isbn',
+                'ediciones.portada',
+                'ediciones.alt_imagen',
+                'ediciones.precio_venta as precio_venta',
+                'editoriales.nombre as editorial',
+
+                DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
             )
             ->whereNull('asigna_promociones.deleted_at')
             ->get();
@@ -55,11 +76,25 @@ class AsignaPromocionController extends Controller
                     return back()->withErrors(['error' => 'Este libro ya tiene esta promoción aplicada actualmente.']);
                 }
 
-                $nuevaPromocion = DB::table('promociones')->where('id', $request->promocion_id)->first();
+                $nuevaPromocion = DB::table('promociones')
+                    ->where('id', $request->promocion_id)
+                    ->first();
                 $libro = DB::table('ediciones')
                     ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
+                    ->leftJoin('editoriales', 'ediciones.editorial_id', '=', 'editoriales.id')
+                    ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
+                    ->leftJoin('autores', 'asigna_autores.autor_id', '=', 'autores.id')
+                    ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
                     ->where('ediciones.id', $request->edicion_id)
-                    ->select('libros.titulo')
+                    ->select(
+                        'libros.titulo',
+                        'ediciones.isbn',
+                        'ediciones.portada',
+                        'ediciones.alt_imagen',
+                        'ediciones.precio_venta',
+                        'editoriales.nombre as editorial',
+                        DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
+                    )
                     ->first();
 
                 return back()->with('confirm_replace', [
@@ -67,7 +102,14 @@ class AsignaPromocionController extends Controller
                     'promocion_id'         => $request->promocion_id,
                     'old_promocion_nombre' => $asignacionActual->promocion_nombre,
                     'new_promocion_nombre' => $nuevaPromocion->nombre,
-                    'libro_titulo'         => $libro->titulo
+                    'libro_titulo'         => $libro->titulo,
+                    'isbn'         => $libro->isbn,
+                    'portada'      => $libro->portada,
+                    'alt_imagen'   => $libro->alt_imagen,
+                    'autor'        => $libro->autor ?? 'Desconocido',
+                    'editorial'    => $libro->editorial ?? 'N/A',
+                    'precio'       => $libro->precio_venta,
+                    'descuento'    => $nuevaPromocion->porcentaje_descuento,
                 ]);
             }
 

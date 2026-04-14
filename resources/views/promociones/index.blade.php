@@ -44,8 +44,16 @@
                         <td>{{ $loop->iteration }}</td>
                         <td class="fw-semibold">{{ $promocion->nombre }}</td>
                         <td>{{ $promocion->porcentaje_descuento }}%</td>
-                        <td>{{ $promocion->fecha_inicio }} — {{ $promocion->fecha_final }}</td>
-                        <td>{{ $promocion->nombre_autorizado }}</td>
+                        <td>
+                            {{ \Carbon\Carbon::parse($promocion->fecha_inicio)->format('d/m/Y') }}
+                            —
+                            {{ \Carbon\Carbon::parse($promocion->fecha_final)->format('d/m/Y') }}
+                        </td>
+                        <td>
+                            {{ $promocion->nombre_autorizado }}
+                            {{ $promocion->ape_paterno }}
+                            {{ $promocion->ape_materno }}
+                        </td>
 
                         <td class="text-end">
                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
@@ -99,7 +107,12 @@
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Autorizado Por</label>
-                                <input type="text" name="nombre_autorizado" class="form-control" placeholder="Nombre de quien autoriza" required maxlength="100">
+
+                                <div class="form-control bg-light text-muted">
+                                    {{ Auth::user()->persona->nombre }}
+                                    {{ Auth::user()->persona->apellido_paterno }}
+                                    {{ Auth::user()->persona->apellido_materno }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -148,7 +161,12 @@
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Autorizado Por</label>
-                                    <input type="text" name="nombre_autorizado" class="form-control text-muted" style="background-color: #f8f9fa;" value="{{ $promocion->nombre_autorizado }}" readonly>
+
+                                    <div class="form-control bg-light text-muted">
+                                        {{ $promocion->nombre_autorizado }}
+                                        {{ $promocion->ape_paterno }}
+                                        {{ $promocion->ape_materno }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

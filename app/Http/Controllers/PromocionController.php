@@ -14,7 +14,7 @@ class PromocionController extends Controller
         $promociones = DB::table('promociones as p')
             ->leftJoin('usuarios as u', 'p.autorizado_por_id', '=', 'u.id')
             ->leftJoin('personas as per', 'u.persona_id', '=', 'per.id')
-            ->select('p.*', 'per.nombre as nombre_autorizado', 'per.apellido_paterno as ape_paterno')
+            ->select('p.*', 'per.nombre as nombre_autorizado', 'per.apellido_paterno as ape_paterno', 'per.apellido_materno as ape_materno')
             ->whereNull('p.deleted_at')
             ->orderBy('p.nombre', 'asc')
             ->get();
@@ -33,11 +33,12 @@ class PromocionController extends Controller
 
         try {
             $data = $request->all();
-            $data['autorizado_por_id'] = 1; // Seguridad
+            $data['autorizado_por_id'] = auth()->id();
+
             Promocion::create($data);
             return redirect()->route('promociones.index')->with('status', 'Promoción creada correctamente.');
         } catch (QueryException $e) {
-            return back()->withInput()->withErrors(['error' => 'Error al guardar en la base de datos.']);
+            return back()->withInput()->withErrors(['error' => 'Error al guardar.']);
         }
     }
 
