@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\QueryException;
 use Carbon\Carbon;
 
@@ -17,14 +18,20 @@ class AsignaPromocionController extends Controller
             ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
             ->leftJoin('autores', 'asigna_autores.autor_id', '=', 'autores.id')
             ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
+            ->leftJoin('asigna_promociones as ap', function ($join) {
+                $join->on('ediciones.id', '=', 'ap.edicion_id')
+                    ->whereNull('ap.deleted_at');
+            })
+            ->leftJoin('promociones as p', 'ap.promocion_id', '=', 'p.id')
             ->select(
                 'ediciones.id',
                 'ediciones.isbn',
                 'ediciones.precio_venta',
                 'ediciones.portada',
                 'libros.titulo',
-
-                DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
+                DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor"),
+                'p.nombre as promo_nombre',
+                'p.porcentaje_descuento as promo_descuento'
             )
             ->whereNull('ediciones.deleted_at')
             ->get();
@@ -38,13 +45,19 @@ class AsignaPromocionController extends Controller
             ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
             ->select(
                 'asigna_promociones.id',
+                'ediciones.id as edicion_id',
                 'promociones.nombre as promocion_nombre',
                 'promociones.porcentaje_descuento',
                 'libros.titulo as libro_titulo',
                 'ediciones.isbn',
                 'ediciones.portada',
                 'ediciones.alt_imagen',
+                'ediciones.anio_publicacion',
+                'ediciones.numero_edicion',
+                'ediciones.numero_paginas',
                 'ediciones.precio_venta as precio_venta',
+                'ediciones.existencias',
+                'ediciones.stock_minimo',
                 'editoriales.nombre as editorial',
 
                 DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
@@ -146,5 +159,37 @@ class AsignaPromocionController extends Controller
         } catch (QueryException $e) {
             return back()->withErrors(['error' => 'No se pudo remover la asignación.']);
         }
+    }
+    public function updatePortada(Request $request, string $edicionId)
+    {
+        $request->validate([
+            'portada' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
+        ]);
+
+        $edicion = DB::table('ediciones')
+            ->where('id', $edicionId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$edicion) {
+            return back()->withErrors(['error' => 'La edicion seleccionada no existe.']);
+        }
+
+        $path = $request->file('portada')->store('portadas', 'public');
+
+        if (!empty($edicion->portada) && Storage::disk('public')->exists($edicion->portada)) {
+            Storage::disk('public')->delete($edicion->portada);
+        }
+
+        DB::table('ediciones')
+            ->where('id', $edicionId)
+            ->update([
+                'portada' => $path,
+                'updated_at' => Carbon::now(),
+            ]);
+
+        return redirect()
+            ->route('asigna_promociones.index')
+            ->with('status', 'Portada actualizada correctamente.');
     }
 }

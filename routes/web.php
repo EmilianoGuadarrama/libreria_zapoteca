@@ -94,6 +94,8 @@ Route::middleware(['auth'])->group(function () {
     // ADMIN / GERENTE
     // =========================
     Route::middleware(['rol:Administrador,Gerente'])->group(function () {
+        Route::post('asigna_promociones/ediciones/{edicion}/portada', [AsignaPromocionController::class, 'updatePortada'])
+            ->name('asigna_promociones.portada.update');
         Route::resource('libros', LibroController::class)->except(['index']);
         Route::resource('promociones', PromocionController::class);
         Route::resource('clasificaciones', ClasificacionController::class)->except(['index']);
