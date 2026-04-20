@@ -375,6 +375,9 @@
             @yield('content')
         </main>
 
+        <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="{{ asset('js/global-animations.js') }}"></script>
         @stack('scripts')
     </div>
 </body>

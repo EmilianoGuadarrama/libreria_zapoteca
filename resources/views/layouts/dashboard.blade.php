@@ -244,7 +244,7 @@ $menuCompras = request()->routeIs('compras.*') || request()->routeIs('detalle_co
             <img src="{{ asset('img/logo.png') }}" alt="Logo">
         </div>
 
-        <a href="{{ url('/') }}" class="{{ request()->is('/') ? 'active' : '' }}">
+        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="fa-solid fa-house"></i>
             <span class="bebas">INICIO</span>
         </a>

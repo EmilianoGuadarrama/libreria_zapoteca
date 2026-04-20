@@ -37,10 +37,6 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
-            if (in_array($user->rol_id, [1, 2])) {
-                return redirect()->intended('/dashboard');
-            }
-
             return redirect('/')->with('success', '¡Qué gusto verte de nuevo en Zapoteca!');
         }
 

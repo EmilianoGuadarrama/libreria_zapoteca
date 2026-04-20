@@ -21,6 +21,7 @@ use App\Http\Controllers\SubgeneroController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\AsignaSubgeneroController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DashboardController;
 
 // Rutas públicas
 Route::get('/', function () {
@@ -40,10 +41,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/dashboard', function () {
-        return view('layouts.dashboard');
-    })->name('dashboard');
-
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
     //REPORTES
 
     // VENTAS

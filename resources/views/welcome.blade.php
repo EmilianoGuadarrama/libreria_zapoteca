@@ -39,9 +39,20 @@
             flex-direction: column;
         }
 
-        .navbar { padding: 20px 0; background: transparent; }
-        .navbar-brand img { height: 65px; width: auto; transition: transform 0.3s ease; }
-        .navbar-brand img:hover { transform: scale(1.05); }
+        .navbar {
+            padding: 20px 0;
+            background: transparent;
+        }
+
+        .navbar-brand img {
+            height: 65px;
+            width: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand img:hover {
+            transform: scale(1.05);
+        }
 
         .nav-link {
             color: var(--zapoteca-dark);
@@ -53,7 +64,9 @@
             transition: color 0.3s;
         }
 
-        .nav-link:hover { color: var(--purple-500); }
+        .nav-link:hover {
+            color: var(--purple-500);
+        }
 
         .btn-nav {
             font-family: var(--font-display);
@@ -85,52 +98,104 @@
             border: 2px solid var(--zapoteca-dark);
         }
 
-        .hero-section { flex: 1; display: flex; align-items: center; padding: 40px 0; }
-        
+        .hero-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+        }
+
         .hero-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-radius: 32px;
             border: 1px solid rgba(181, 126, 220, 0.3);
-            padding: 60px;
+            padding: 45px 50px 55px;
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
+            isolation: isolate;
         }
 
         .hero-card::before {
-            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
             background: linear-gradient(90deg, var(--zapoteca-dark), var(--zapoteca-light));
         }
 
-        /* Alerta Personalizada */
+        /* Alerta */
         .zapoteca-alert {
-            background: var(--purple-100);
+            position: relative;
+            z-index: 30;
+            background: #f6ecfb;
             border: 2px solid var(--zapoteca-light);
             color: var(--zapoteca-dark);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 30px;
+            border-radius: 24px;
+            padding: 24px 20px;
+            margin-bottom: 45px;
             animation: slideDown 0.5s ease-out;
+            box-shadow: 0 8px 18px rgba(75, 28, 113, 0.08);
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .hero-title { font-family: var(--font-display); font-size: 5rem; color: var(--zapoteca-dark); line-height: 0.85; margin-bottom: 10px; }
-        .hero-subtitle { color: var(--zapoteca-light); font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; margin-bottom: 25px; text-transform: uppercase; }
-        .hero-text { color: var(--text-muted); font-size: 1.15rem; line-height: 1.7; margin-bottom: 45px; max-width: 90%; }
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            color: var(--zapoteca-dark);
+            line-height: 0.85;
+            margin-bottom: 10px;
+        }
+
+        .hero-subtitle {
+            color: var(--zapoteca-light);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+        }
+
+        .hero-text {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            line-height: 1.7;
+            margin-bottom: 45px;
+            max-width: 90%;
+        }
 
         .btn-zapoteca-main {
             background-color: var(--zapoteca-dark);
-            color: white; border: none; padding: 16px 50px; border-radius: 50px;
-            font-weight: 700; font-size: 1.1rem; letter-spacing: 1px;
+            color: white;
+            border: none;
+            padding: 16px 50px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 10px 25px rgba(75, 28, 113, 0.25);
-            text-decoration: none; display: inline-block;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-zapoteca-main:hover {
@@ -140,22 +205,80 @@
             color: white;
         }
 
-        .img-container { position: relative; display: flex; justify-content: center; align-items: center; }
+        .img-container {
+            position: relative;
+            min-height: 520px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .blob-bg {
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 540px;
+            height: auto;
+            z-index: 0;
+            opacity: 0.18;
+            fill: var(--purple-500);
+            pointer-events: none;
+        }
+
         .main-logo-hero {
-            width: 100%; max-width: 450px;
-            filter: drop-shadow(0 25px 45px rgba(75, 28, 113, 0.2));
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 390px;
+            height: auto;
+            filter: drop-shadow(0 20px 35px rgba(75, 28, 113, 0.16));
             animation: floating 6s ease-in-out infinite;
         }
 
-        @keyframes floating { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } }
-        .blob-bg { position: absolute; z-index: -1; width: 130%; opacity: 0.35; fill: var(--purple-500); }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-18px); }
+        }
 
-        .bebas { font-family: var(--font-display); }
+        .bebas {
+            font-family: var(--font-display);
+        }
 
         @media (max-width: 991px) {
-            .hero-card { padding: 40px 25px; text-align: center; }
-            .hero-title { font-size: 3.5rem; }
-            .hero-text { max-width: 100%; }
+            .hero-card {
+                padding: 35px 22px 40px;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: 3.5rem;
+            }
+
+            .hero-text {
+                max-width: 100%;
+            }
+
+            .img-container {
+                min-height: 360px;
+                margin-bottom: 25px;
+            }
+
+            .blob-bg {
+                max-width: 380px;
+                top: 50%;
+            }
+
+            .main-logo-hero {
+                max-width: 280px;
+            }
+
+            .zapoteca-alert {
+                margin-bottom: 30px;
+            }
         }
     </style>
 </head>
@@ -193,7 +316,13 @@
                             <i class="fa-solid fa-circle-user me-2"></i> HOLA, {{ explode(' ', Auth::user()->persona->nombre)[0] }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2" aria-labelledby="userDropdown" style="border-radius: 15px;">
-                            <li><a class="dropdown-item py-2" href="#"><i class="fa-solid fa-id-card me-2"></i> Mi Perfil</a></li>
+                            @if(in_array(auth()->user()->rol_id, [1, 2]))
+                                <li>
+                                    <a class="dropdown-item py-2" href="{{ route('dashboard') }}">
+                                        <i class="fa-solid fa-chart-line me-2"></i> Dashboard (Panel)
+                                    </a>
+                                </li>
+                            @endif
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">
@@ -214,17 +343,16 @@
 <main class="hero-section">
     <div class="container">
         <div class="hero-card">
-            
-            {{-- SECCIÓN DE ALERTAS DINÁMICAS --}}
+
             @if (session('status') || session('info') || session('success'))
-                <div class="zapoteca-alert text-center shadow-sm">
+                <div class="zapoteca-alert text-center">
                     <i class="fa-solid fa-circle-check mb-2" style="font-size: 2.5rem; color: var(--zapoteca-dark);"></i>
-                    <h4 class="bebas">¡Aviso de Zapoteca!</h4>
+                    <h4 class="bebas mb-2">¡Aviso de Zapoteca!</h4>
                     <p class="mb-0 fw-bold">{{ session('status') ?? session('info') ?? session('success') }}</p>
                 </div>
             @endif
 
-            <div class="row align-items-center">
+            <div class="row align-items-center hero-content">
                 <div class="col-lg-6 order-2 order-lg-1">
                     @auth
                         <h1 class="hero-title">¡HOLA DE <br>NUEVO!</h1>
@@ -237,15 +365,17 @@
                     <p class="hero-text">
                         Explora una colección curada de historias que trascienden el tiempo. Desde clásicos inmortales hasta las novedades más esperadas, encuentra tu próximo libro favorito.
                     </p>
+
                     <a href="#" class="btn-zapoteca-main">
                         EXPLORAR CATÁLOGO <i class="fa-solid fa-arrow-right-long ms-2"></i>
                     </a>
                 </div>
 
-                <div class="col-lg-6 order-1 order-lg-2 img-container mb-5 mb-lg-0">
+                <div class="col-lg-6 order-1 order-lg-2 img-container mb-4 mb-lg-0">
                     <svg class="blob-bg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                         <path d="M42.7,-65.3C55.9,-58.5,67.6,-48.5,74.1,-35.8C80.6,-23.1,81.9,-7.7,78.7,6.8C75.5,21.3,67.8,34.9,57.7,46.1C47.6,57.3,35,66.1,21,71.1C7,76.1,-8.3,77.3,-22.4,73.5C-36.5,69.7,-49.4,60.9,-58.5,49.2C-67.6,37.5,-72.9,22.9,-73.8,8.2C-74.7,-6.5,-71.2,-21.3,-63.3,-33.6C-55.4,-45.9,-43.1,-55.7,-30.2,-62.7C-17.3,-69.7,-3.8,-73.9,10,-75.6C23.8,-77.3,37.5,-76.5,42.7,-65.3Z" transform="translate(100 100)" />
                     </svg>
+
                     <img src="{{ asset('img/logo.png') }}" alt="Zapoteca Ilustración" class="main-logo-hero">
                 </div>
             </div>
@@ -258,6 +388,5 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 </body>
 </html>
