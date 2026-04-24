@@ -13,6 +13,7 @@ class AsignaPromocionController extends Controller
     public function index()
     {
         $promociones = DB::table('promociones')->whereNull('deleted_at')->get();
+
         $ediciones = DB::table('ediciones')
             ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
             ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
@@ -35,6 +36,7 @@ class AsignaPromocionController extends Controller
             )
             ->whereNull('ediciones.deleted_at')
             ->get();
+
         $asignaciones = DB::table('asigna_promociones')
             ->join('promociones', 'asigna_promociones.promocion_id', '=', 'promociones.id')
             ->join('ediciones', 'asigna_promociones.edicion_id', '=', 'ediciones.id')
@@ -48,6 +50,7 @@ class AsignaPromocionController extends Controller
                 'ediciones.id as edicion_id',
                 'promociones.nombre as promocion_nombre',
                 'promociones.porcentaje_descuento',
+                'promociones.fecha_final', // <--- SE AGREGÓ ESTA LÍNEA PARA LA VIGENCIA
                 'libros.titulo as libro_titulo',
                 'ediciones.isbn',
                 'ediciones.portada',
@@ -59,7 +62,6 @@ class AsignaPromocionController extends Controller
                 'ediciones.existencias',
                 'ediciones.stock_minimo',
                 'editoriales.nombre as editorial',
-
                 DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor")
             )
             ->whereNull('asigna_promociones.deleted_at')
@@ -92,6 +94,7 @@ class AsignaPromocionController extends Controller
                 $nuevaPromocion = DB::table('promociones')
                     ->where('id', $request->promocion_id)
                     ->first();
+
                 $libro = DB::table('ediciones')
                     ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
                     ->leftJoin('editoriales', 'ediciones.editorial_id', '=', 'editoriales.id')
@@ -116,13 +119,13 @@ class AsignaPromocionController extends Controller
                     'old_promocion_nombre' => $asignacionActual->promocion_nombre,
                     'new_promocion_nombre' => $nuevaPromocion->nombre,
                     'libro_titulo'         => $libro->titulo,
-                    'isbn'         => $libro->isbn,
-                    'portada'      => $libro->portada,
-                    'alt_imagen'   => $libro->alt_imagen,
-                    'autor'        => $libro->autor ?? 'Desconocido',
-                    'editorial'    => $libro->editorial ?? 'N/A',
-                    'precio'       => $libro->precio_venta,
-                    'descuento'    => $nuevaPromocion->porcentaje_descuento,
+                    'isbn'                 => $libro->isbn,
+                    'portada'              => $libro->portada,
+                    'alt_imagen'           => $libro->alt_imagen,
+                    'autor'                => $libro->autor ?? 'Desconocido',
+                    'editorial'            => $libro->editorial ?? 'N/A',
+                    'precio'               => $libro->precio_venta,
+                    'descuento'            => $nuevaPromocion->porcentaje_descuento,
                 ]);
             }
 
@@ -149,7 +152,6 @@ class AsignaPromocionController extends Controller
 
     public function destroy(string $id)
     {
-        // (El método destroy se queda igual)
         try {
             DB::table('asigna_promociones')
                 ->where('id', $id)
@@ -160,6 +162,7 @@ class AsignaPromocionController extends Controller
             return back()->withErrors(['error' => 'No se pudo remover la asignación.']);
         }
     }
+
     public function updatePortada(Request $request, string $edicionId)
     {
         $request->validate([

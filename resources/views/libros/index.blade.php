@@ -20,13 +20,6 @@
             </div>
         @endif
 
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ $errors->first() }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
         <div class="table-responsive">
             <table class="table table-bordered table-striped mi-datatable" style="width:100%">
                 <thead class="table-light">
@@ -35,7 +28,7 @@
                     <th>Título</th>
                     <th>Sinopsis</th>
                     <th>Clasificación</th>
-                    <th>Año de Publicación</th>
+                    <th>Año</th>
                     <th>Género</th>
                     <th class="text-end">Acciones</th>
                 </tr>
@@ -69,7 +62,7 @@
         </div>
     </div>
 
-    {{-- modal crear --}}
+    {{-- MODAL CREAR --}}
     <div class="modal fade" id="modalCreateLibro" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -82,42 +75,55 @@
 
                 <form action="{{ route('libros.store') }}" method="post">
                     @csrf
+                    <input type="hidden" name="tipo_operacion" value="crear">
 
                     <div class="modal-body p-4">
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Título</label>
-                                <input type="text" name="titulo" class="form-control" required maxlength="255">
+                                <input type="text" name="titulo" class="form-control @error('titulo') is-invalid @enderror"
+                                       value="{{ old('titulo') }}" placeholder="Ej: Rayuela" required maxlength="255">
+                                @error('titulo') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-4">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Año de Publicación</label>
-                                <input type="number" name="anio_publicacion_original" class="form-control" required>
+                                <input type="number" name="anio_publicacion_original" class="form-control @error('anio_publicacion_original') is-invalid @enderror"
+                                       value="{{ old('anio_publicacion_original', 1000) }}" placeholder="1000" required min="1000" max="{{ date('Y') }}">
+                                @error('anio_publicacion_original') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Clasificación</label>
-                                <select name="clasificacion_id" class="form-select" required>
-                                    <option value="">Seleccione</option>
+                                <select name="clasificacion_id" class="form-select @error('clasificacion_id') is-invalid @enderror" required>
+                                    <option value="">Seleccione una clasificación</option>
                                     @foreach($clasificacionesCatalogo as $clasificacion)
-                                        <option value="{{ $clasificacion->id }}">{{ $clasificacion->nombre }}</option>
+                                        <option value="{{ $clasificacion->id }}" {{ old('clasificacion_id') == $clasificacion->id ? 'selected' : '' }}>
+                                            {{ $clasificacion->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                @error('clasificacion_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Género</label>
-                                <select name="genero_principal_id" class="form-select" required>
-                                    <option value="">Seleccione</option>
+                                <select name="genero_principal_id" class="form-select @error('genero_principal_id') is-invalid @enderror" required>
+                                    <option value="">Seleccione un género</option>
                                     @foreach($generosCatalogo as $genero)
-                                        <option value="{{ $genero->id }}">{{ $genero->nombre }}</option>
+                                        <option value="{{ $genero->id }}" {{ old('genero_principal_id') == $genero->id ? 'selected' : '' }}>
+                                            {{ $genero->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                @error('genero_principal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-12">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Sinopsis</label>
-                                <textarea name="sinopsis" class="form-control" rows="5" required></textarea>
+                                <textarea name="sinopsis" class="form-control @error('sinopsis') is-invalid @enderror"
+                                          rows="5" placeholder="Escribe un breve resumen de la obra..." required minlength="10">{{ old('sinopsis') }}</textarea>
+                                @error('sinopsis') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         </div>
                     </div>
@@ -131,7 +137,7 @@
         </div>
     </div>
 
-    {{-- modales editar y eliminar --}}
+    {{-- MODALES EDITAR Y ELIMINAR --}}
     @foreach($libros as $libro)
         <div class="modal fade" id="modalEditLibro{{ $libro->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -146,46 +152,54 @@
                     <form action="{{ route('libros.update', $libro->id) }}" method="post">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="tipo_operacion" value="editar">
+                        <input type="hidden" name="id_error" value="{{ $libro->id }}">
 
                         <div class="modal-body p-4">
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Título</label>
-                                    <input type="text" name="titulo" class="form-control" value="{{ $libro->titulo }}" required maxlength="255">
+                                    <input type="text" name="titulo" class="form-control @error('titulo') is-invalid @enderror"
+                                           value="{{ old('titulo', $libro->titulo) }}" placeholder="Ej: Don Quijote de la Mancha" required maxlength="255">
+                                    @error('titulo') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Año de Publicación</label>
-                                    <input type="number" name="anio_publicacion_original" class="form-control" value="{{ $libro->anio_publicacion_original }}" required>
+                                    <input type="number" name="anio_publicacion_original" class="form-control @error('anio_publicacion_original') is-invalid @enderror"
+                                           value="{{ old('anio_publicacion_original', $libro->anio_publicacion_original) }}" placeholder="1605" required min="1000" max="{{ date('Y') }}">
+                                    @error('anio_publicacion_original') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Clasificación</label>
-                                    <select name="clasificacion_id" class="form-select" required>
-                                        <option value="">Seleccione</option>
+                                    <select name="clasificacion_id" class="form-select @error('clasificacion_id') is-invalid @enderror" required>
                                         @foreach($clasificacionesCatalogo as $clasificacion)
-                                            <option value="{{ $clasificacion->id }}" {{ $libro->clasificacion_id == $clasificacion->id ? 'selected' : '' }}>
+                                            <option value="{{ $clasificacion->id }}" {{ old('clasificacion_id', $libro->clasificacion_id) == $clasificacion->id ? 'selected' : '' }}>
                                                 {{ $clasificacion->nombre }}
                                             </option>
                                         @endforeach
                                     </select>
+                                    @error('clasificacion_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Género</label>
-                                    <select name="genero_principal_id" class="form-select" required>
-                                        <option value="">Seleccione</option>
+                                    <select name="genero_principal_id" class="form-select @error('genero_principal_id') is-invalid @enderror" required>
                                         @foreach($generosCatalogo as $genero)
-                                            <option value="{{ $genero->id }}" {{ $libro->genero_principal_id == $genero->id ? 'selected' : '' }}>
+                                            <option value="{{ $genero->id }}" {{ old('genero_principal_id', $libro->genero_principal_id) == $genero->id ? 'selected' : '' }}>
                                                 {{ $genero->nombre }}
                                             </option>
                                         @endforeach
                                     </select>
+                                    @error('genero_principal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Sinopsis</label>
-                                    <textarea name="sinopsis" class="form-control" rows="5" required>{{ $libro->sinopsis }}</textarea>
+                                    <textarea name="sinopsis" class="form-control @error('sinopsis') is-invalid @enderror"
+                                              rows="5" placeholder="Actualiza la sinopsis del libro..." required minlength="10">{{ old('sinopsis', $libro->sinopsis) }}</textarea>
+                                    @error('sinopsis') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                         </div>
@@ -227,4 +241,19 @@
             </div>
         </div>
     @endforeach
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            @if($errors->any())
+            @if(old('tipo_operacion') == 'crear')
+            var myModal = new bootstrap.Modal(document.getElementById('modalCreateLibro'));
+            myModal.show();
+            @elseif(old('tipo_operacion') == 'editar')
+            var idModal = "{{ old('id_error') }}";
+            var myModal = new bootstrap.Modal(document.getElementById('modalEditLibro' + idModal));
+            myModal.show();
+            @endif
+            @endif
+        });
+    </script>
 @endsection

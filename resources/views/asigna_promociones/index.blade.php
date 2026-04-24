@@ -1,4 +1,5 @@
 @extends('layouts.dashboard')
+
 <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 
@@ -57,7 +58,7 @@
                     <th>ISBN</th>
                     <th>Promoción Aplicada</th>
                     <th>Descuento</th>
-                    <th class="text-end">Acciones</th>
+                    <th>Vigencia</th> <th class="text-end">Acciones</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -67,6 +68,9 @@
                         $descuento = (float) ($asignacion->porcentaje_descuento ?? 0);
                         $precioFinal = $precioOriginal - ($precioOriginal * ($descuento / 100));
                         $portadaUrl = !empty($asignacion->portada) ? asset('storage/' . $asignacion->portada) : '';
+
+                        $fechaFinal = isset($asignacion->fecha_final) ? \Carbon\Carbon::parse($asignacion->fecha_final)->startOfDay() : null;
+                        $diasRestantes = $fechaFinal ? now()->startOfDay()->diffInDays($fechaFinal, false) : 0;
                     @endphp
                     <tr>
                         <td>{{ $loop->iteration }}</td>
@@ -104,6 +108,22 @@
                         <td><small class="text-muted">{{ $asignacion->isbn }}</small></td>
                         <td>{{ $asignacion->promocion_nombre }}</td>
                         <td><span class="badge bg-success">{{ number_format($descuento, 0) }}%</span></td>
+
+                        <td>
+                            @if($fechaFinal)
+                                @if($diasRestantes < 0)
+                                    <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-circle-xmark"></i> Expirada</span>
+                                @elseif($diasRestantes == 0)
+                                    <span class="badge bg-warning text-dark rounded-pill"><i class="fa-solid fa-clock"></i> Expira hoy</span>
+                                @else
+                                    <span class="badge bg-info text-dark rounded-pill" style="background-color: #dbb6ee !important;"><i class="fa-solid fa-hourglass-half"></i> Faltan {{ $diasRestantes }} días</span>
+                                @endif
+                                <div class="small text-muted mt-1 fw-semibold">Hasta {{ $fechaFinal->format('d/m/Y') }}</div>
+                            @else
+                                <span class="text-muted small">Sin fecha</span>
+                            @endif
+                        </td>
+
                         <td class="text-end">
                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 text-danger"
                                     data-bs-toggle="modal" data-bs-target="#modalQuitarAsignacion{{ $asignacion->id }}"
@@ -130,15 +150,24 @@
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Promoción</label>
-                            <select name="promocion_id" class="form-select" required>
+                            <select id="select-promocion" name="promocion_id" class="form-select" required>
                                 <option value="" disabled selected>-- Elige una promoción activa --</option>
                                 @foreach($promociones as $promo)
-                                    <option value="{{ $promo->id }}">{{ $promo->nombre }} ({{ $promo->porcentaje_descuento }}%)</option>
+                                    @php
+                                        $fechaFinPromo = isset($promo->fecha_final) ? \Carbon\Carbon::parse($promo->fecha_final)->startOfDay() : now()->startOfDay();
+                                        $diasPromo = now()->startOfDay()->diffInDays($fechaFinPromo, false);
+                                    @endphp
+                                    <option value="{{ $promo->id }}"
+                                            data-descuento="{{ $promo->porcentaje_descuento }}"
+                                            data-fin="{{ $fechaFinPromo->format('d/m/Y') }}"
+                                            data-dias="{{ $diasPromo }}">
+                                        {{ $promo->nombre }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libro (Edicion)</label>
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libro (Edición)</label>
                             <select id="select-libro" name="edicion_id" class="form-select" required>
                                 <option value="" disabled selected>-- Busca y elige un libro --</option>
                                 @foreach($ediciones as $edicion)
@@ -250,41 +279,29 @@
                         <div class="row align-items-center">
                             <div class="zoom-container mx-auto">
                                 @if(!empty($asignacion->portada))
-                                    <img src="{{ asset('storage/' . $asignacion->portada) }}"
-                                         alt="{{ $asignacion->alt_imagen ?? $asignacion->libro_titulo }}"
-                                         class="zoom-img"
-                                         loading="lazy"
-                                         decoding="async">
+                                    <img src="{{ asset('storage/' . $asignacion->portada) }}" alt="{{ $asignacion->alt_imagen ?? $asignacion->libro_titulo }}" class="zoom-img" loading="lazy" decoding="async">
                                 @else
-                                    <div class="book-detail-empty d-flex align-items-center justify-content-center mx-auto" style="max-width: 200px; height: 300px;">
-                                        {{ $asignacion->alt_imagen ?? 'Sin imagen' }}
-                                    </div>
+                                    <div class="book-detail-empty d-flex align-items-center justify-content-center mx-auto" style="max-width: 200px; height: 300px;">{{ $asignacion->alt_imagen ?? 'Sin imagen' }}</div>
                                 @endif
                             </div>
-
                             <div class="col-md-8">
                                 <h5 class="fw-bold mb-1" style="color:#4b1c71;">{{ $asignacion->libro_titulo }}</h5>
                                 <p class="text-muted small mb-2">ISBN: {{ $asignacion->isbn }}</p>
                                 <p class="mb-1 small"><strong>Autor:</strong> {{ $asignacion->autor ?? 'N/A' }}</p>
                                 <p class="mb-2 small"><strong>Editorial:</strong> {{ $asignacion->editorial ?? 'N/A' }}</p>
-
                                 @php
                                     $precio = $asignacion->precio_venta ?? 0;
                                     $descuento = $asignacion->porcentaje_descuento ?? 0;
                                     $precioFinal = $precio - ($precio * ($descuento / 100));
                                 @endphp
-
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <span class="text-muted small"><del>$ {{ number_format($precio, 2) }}</del></span>
                                     <span class="fw-bold text-success">$ {{ number_format($precioFinal, 2) }}</span>
                                     <span class="badge bg-success">-{{ $descuento }}%</span>
                                 </div>
-
                                 <div class="mt-3 p-2 rounded" style="background-color: #fff3f3;">
                                     <p class="mb-0 small text-danger fw-semibold">
-                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                                        Estas a punto de eliminar la promoción
-                                        <strong>"{{ $asignacion->promocion_nombre }}"</strong>
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Estas a punto de eliminar la promoción <strong>"{{ $asignacion->promocion_nombre }}"</strong>
                                     </p>
                                 </div>
                             </div>
@@ -316,51 +333,39 @@
                         <div class="row align-items-center">
                             <div class="col-md-4 text-center mb-3 mb-md-0">
                                 @if(!empty($data['portada']))
-                                    <img src="{{ asset('storage/' . $data['portada']) }}"
-                                         alt="{{ $data['alt_imagen'] ?? 'Portada' }}"
-                                         class="img-fluid rounded shadow-sm"
-                                         style="max-height: 160px;"
-                                         loading="lazy"
-                                         decoding="async">
+                                    <img src="{{ asset('storage/' . $data['portada']) }}" alt="{{ $data['alt_imagen'] ?? 'Portada' }}" class="img-fluid rounded shadow-sm" style="max-height: 160px;" loading="lazy" decoding="async">
                                 @else
                                     <div class="text-muted fst-italic">{{ $data['alt_imagen'] ?? 'Sin imagen' }}</div>
                                 @endif
                             </div>
-
                             <div class="col-md-8">
                                 <h5 class="fw-bold mb-1" style="color:#4b1c71;">{{ $data['libro_titulo'] }}</h5>
                                 <p class="text-muted small mb-2">ISBN: {{ $data['isbn'] }}</p>
                                 <p class="mb-1 small"><strong>Autor:</strong> {{ $data['autor'] ?? 'N/A' }}</p>
                                 <p class="mb-2 small"><strong>Editorial:</strong> {{ $data['editorial'] ?? 'N/A' }}</p>
-
                                 @php
                                     $precio = $data['precio'] ?? 0;
                                     $descuento = $data['descuento'] ?? 0;
                                     $precioFinal = $precio - ($precio * ($descuento / 100));
                                 @endphp
-
                                 <div class="d-flex align-items-center gap-2 mb-3">
                                     <span class="text-muted small"><del>$ {{ number_format($precio, 2) }}</del></span>
                                     <span class="fw-bold text-success">$ {{ number_format($precioFinal, 2) }}</span>
                                     <span class="badge bg-success">-{{ $descuento }}%</span>
                                 </div>
-
                                 <div class="d-flex align-items-center gap-2 mb-3">
                                     <span class="badge bg-light text-dark border">{{ $data['old_promocion_nombre'] }}</span>
                                     <i class="fa-solid fa-arrow-right text-muted"></i>
                                     <span class="badge text-white" style="background-color:#4b1c71;">{{ $data['new_promocion_nombre'] }}</span>
                                 </div>
-
                                 <div class="mt-2 p-2 rounded" style="background-color: #f3e8ff;">
                                     <p class="mb-0 small fw-semibold" style="color:#4b1c71;">
-                                        <i class="fa-solid fa-code-compare me-1"></i>
-                                        Se reemplazara la promoción actual por la nueva
+                                        <i class="fa-solid fa-code-compare me-1"></i> Se reemplazara la promoción actual por la nueva
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal" style="color: #7a6a88;">Mantener Anterior</button>
                         <form action="{{ route('asigna_promociones.store') }}" method="post" class="d-inline">
@@ -368,9 +373,7 @@
                             <input type="hidden" name="promocion_id" value="{{ $data['promocion_id'] }}">
                             <input type="hidden" name="edicion_id" value="{{ $data['edicion_id'] }}">
                             <input type="hidden" name="force_replace" value="1">
-                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #7f4ca5; transition: all 0.3s;" onmouseover="this.style.backgroundColor='#4b1c71'" onmouseout="this.style.backgroundColor='#7f4ca5'">
-                                Si, Reemplazar
-                            </button>
+                            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #7f4ca5; transition: all 0.3s;" onmouseover="this.style.backgroundColor='#4b1c71'" onmouseout="this.style.backgroundColor='#7f4ca5'">Si, Reemplazar</button>
                         </form>
                     </div>
                 </div>
@@ -387,39 +390,66 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+
+            // Selector de Promociones
+            new TomSelect("#select-promocion", {
+                render: {
+                    option: function(data, escape) {
+                        let dias = parseInt(data.$option.dataset.dias);
+                        let badgeDias = '';
+                        if (dias < 0) { badgeDias = '<span class="badge bg-danger">Expirada</span>'; }
+                        else if (dias === 0) { badgeDias = '<span class="badge bg-warning text-dark">Expira Hoy</span>'; }
+                        else { badgeDias = `<span class="badge" style="background-color: #dbb6ee; color: #4b1c71;">Faltan ${dias} días</span>`; }
+
+                        return `
+                        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                            <div>
+                                <div class="fw-bold" style="color: #4b1c71;">${escape(data.text)}</div>
+                                <div class="small text-muted"><i class="fa-regular fa-calendar"></i> Hasta: ${escape(data.$option.dataset.fin)}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="badge bg-success mb-1 fs-6">-${escape(data.$option.dataset.descuento)}%</div>
+                                <div class="d-block">${badgeDias}</div>
+                            </div>
+                        </div>`;
+                    },
+                    item: function(data, escape) {
+                        return `<div class="fw-bold">${escape(data.text)} <span class="badge bg-success ms-2">-${escape(data.$option.dataset.descuento)}%</span></div>`;
+                    }
+                }
+            });
+
+            // Selector de Libros
             new TomSelect("#select-libro", {
                 render: {
                     option: function(data, escape) {
-                        let portada = data.$option.dataset.portada
-                            ? `/storage/${data.$option.dataset.portada}`
-                            : 'https://via.placeholder.com/50x70?text=No+Img';
-
+                        let portada = data.$option.dataset.portada ? `/storage/${data.$option.dataset.portada}` : 'https://via.placeholder.com/50x70?text=No+Img';
                         let promo = data.$option.dataset.promocion;
                         let descuento = data.$option.dataset.descuento;
-
                         let promoHTML = '';
 
                         if (promo) {
                             promoHTML = `
-                            <div class="small text-warning fw-bold">
-                                🔥 ${escape(promo)} (${descuento}%)
-                            </div>
-                        `;
-                                        }
+                            <div class="mt-1 p-1 rounded" style="background-color: #fff0ff; border: 1px dashed #dbb6ee;">
+                                <div class="small fw-bold" style="color: #4b1c71;">
+                                    <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Ya tiene promoción activa:
+                                </div>
+                                <div class="small text-muted">${escape(promo)} <span class="badge bg-success ms-1">-${descuento}%</span></div>
+                            </div>`;
+                        }
 
-                                        return `
-                        <div class="d-flex align-items-center gap-2 p-2">
-                            <img src="${portada}" loading="lazy" style="width:40px; height:55px; object-fit:cover; border-radius:6px;">
-                            <div>
-                                <div class="fw-bold">${escape(data.$option.dataset.titulo)}</div>
-                                <div class="small text-muted">ISBN: ${escape(data.$option.dataset.isbn)}</div>
-                                <div class="small text-success fw-semibold">$ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}</div>
-                                <div class="small text-muted">${escape(data.$option.dataset.autor || 'N/A')}</div>
-
+                        return `
+                        <div class="d-flex align-items-start gap-3 p-2 border-bottom">
+                            <img src="${portada}" loading="lazy" style="width:45px; height:65px; object-fit:cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">${escape(data.$option.dataset.titulo)}</div>
+                                <div class="d-flex justify-content-between">
+                                    <div class="small text-muted">ISBN: ${escape(data.$option.dataset.isbn)}</div>
+                                    <div class="small text-success fw-bold">$ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}</div>
+                                </div>
                                 ${promoHTML}
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                     },
                     item: function(data, escape) {
                         return `<div class="fw-semibold">${escape(data.text)}</div>`;
@@ -430,7 +460,6 @@
             document.querySelectorAll(".zoom-container").forEach(function(container) {
                 const img = container.querySelector(".zoom-img");
                 if (!img) return;
-
                 container.addEventListener("mousemove", function(e) {
                     const rect = container.getBoundingClientRect();
                     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -438,7 +467,6 @@
                     img.style.transformOrigin = `${x}% ${y}%`;
                     img.style.transform = "scale(2.2)";
                 });
-
                 container.addEventListener("mouseleave", function() {
                     img.style.transform = "scale(1)";
                 });
@@ -463,20 +491,12 @@
             function setCover(src, fallbackText) {
                 detailState.image = src || "";
                 detailState.emptyLabel = fallbackText || "Sin imagen";
-
                 if (detailState.image) {
-                    coverImage.src = detailState.image;
-                    coverImage.classList.remove("d-none");
-                    coverEmpty.classList.add("d-none");
-                    previewThumb.src = detailState.image;
-                    previewThumb.classList.remove("d-none");
+                    coverImage.src = detailState.image; coverImage.classList.remove("d-none"); coverEmpty.classList.add("d-none");
+                    previewThumb.src = detailState.image; previewThumb.classList.remove("d-none");
                 } else {
-                    coverImage.removeAttribute("src");
-                    coverImage.classList.add("d-none");
-                    coverEmpty.textContent = detailState.emptyLabel;
-                    coverEmpty.classList.remove("d-none");
-                    previewThumb.removeAttribute("src");
-                    previewThumb.classList.add("d-none");
+                    coverImage.removeAttribute("src"); coverImage.classList.add("d-none"); coverEmpty.textContent = detailState.emptyLabel; coverEmpty.classList.remove("d-none");
+                    previewThumb.removeAttribute("src"); previewThumb.classList.add("d-none");
                 }
             }
 
@@ -487,19 +507,11 @@
             }
 
             function applyPreview(file) {
-                if (!file) {
-                    resetPreviewState();
-                    return;
-                }
-
+                if (!file) { resetPreviewState(); return; }
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    coverImage.src = e.target.result;
-                    coverImage.classList.remove("d-none");
-                    coverEmpty.classList.add("d-none");
-                    previewThumb.src = e.target.result;
-                    previewThumb.classList.remove("d-none");
-                    saveButton.disabled = false;
+                    coverImage.src = e.target.result; coverImage.classList.remove("d-none"); coverEmpty.classList.add("d-none");
+                    previewThumb.src = e.target.result; previewThumb.classList.remove("d-none"); saveButton.disabled = false;
                 };
                 reader.readAsDataURL(file);
             }
@@ -535,39 +547,30 @@
                 resetPreviewState();
             });
 
-            coverInput.addEventListener("change", function() {
-                applyPreview(this.files[0]);
-            });
+            coverInput.addEventListener("change", function() { applyPreview(this.files[0]); });
 
             ["dragenter", "dragover"].forEach(function(eventName) {
                 dropzone.addEventListener(eventName, function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.add("is-dragover");
+                    e.preventDefault(); e.stopPropagation(); dropzone.classList.add("is-dragover");
                 });
             });
 
             ["dragleave", "drop"].forEach(function(eventName) {
                 dropzone.addEventListener(eventName, function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.remove("is-dragover");
+                    e.preventDefault(); e.stopPropagation(); dropzone.classList.remove("is-dragover");
                 });
             });
 
             dropzone.addEventListener("drop", function(e) {
                 const files = e.dataTransfer.files;
                 if (!files || !files.length) return;
-
                 const transfer = new DataTransfer();
                 transfer.items.add(files[0]);
                 coverInput.files = transfer.files;
                 applyPreview(files[0]);
             });
 
-            resetPreviewButton.addEventListener("click", function() {
-                resetPreviewState();
-            });
+            resetPreviewButton.addEventListener("click", function() { resetPreviewState(); });
         });
     </script>
 @endsection

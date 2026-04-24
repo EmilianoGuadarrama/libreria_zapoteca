@@ -42,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     //REPORTES
 
     // VENTAS
@@ -73,7 +73,7 @@ Route::middleware(['auth'])->group(function () {
     // =========================
     Route::middleware(['rol:Administrador'])->group(function () {
     Route::get('/admin/usuarios-pendientes', [AdminController::class, 'indexPendientes'])->name('admin.pendientes');
-    Route::patch('/admin/usuarios/{id}/activar', [AdminController::class, 'activarUsuario'])->name('admin.activar'); 
+    Route::patch('/admin/usuarios/{id}/activar', [AdminController::class, 'activarUsuario'])->name('admin.activar');
     Route::delete('/admin/rechazar/{id}', [AdminController::class, 'rechazar'])->name('admin.rechazar');
 });
 
@@ -95,7 +95,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['rol:Administrador,Gerente'])->group(function () {
         Route::post('asigna_promociones/ediciones/{edicion}/portada', [AsignaPromocionController::class, 'updatePortada'])
             ->name('asigna_promociones.portada.update');
+        Route::post('promociones/{id}/renovar', [App\Http\Controllers\PromocionController::class, 'renovar'])->name('promociones.renovar');
         Route::resource('libros', LibroController::class)->except(['index']);
+        Route::delete('/libros/{id}', [LibroController::class, 'destroy'])->name('libros.destroy');
         Route::resource('promociones', PromocionController::class);
         Route::resource('clasificaciones', ClasificacionController::class)->except(['index']);
         Route::resource('asigna_promociones', AsignaPromocionController::class);
