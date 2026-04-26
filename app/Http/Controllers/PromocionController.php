@@ -12,6 +12,8 @@ class PromocionController extends Controller
 {
     public function index()
     {
+        $hoy = now()->startOfDay();
+
         $todasLasPromociones = DB::table('promociones as p')
             ->leftJoin('usuarios as u', 'p.autorizado_por_id', '=', 'u.id')
             ->leftJoin('personas as per', 'u.persona_id', '=', 'per.id')
@@ -20,18 +22,41 @@ class PromocionController extends Controller
             ->orderBy('p.nombre', 'asc')
             ->get();
 
-        $hoy = now()->startOfDay();
         $promocionesActivas = collect();
         $promocionesExpiradas = collect();
 
         foreach ($todasLasPromociones as $promo) {
+            $fechaInicio = Carbon::parse($promo->fecha_inicio)->startOfDay();
             $fechaFinal = Carbon::parse($promo->fecha_final)->startOfDay();
+
             if ($fechaFinal->lt($hoy)) {
                 $promocionesExpiradas->push($promo);
             } else {
+                $promo->fecha_inicio_carbon = $fechaInicio;
+                $promo->fecha_final_carbon = $fechaFinal;
+                $promo->dias_restantes = $hoy->diffInDays($fechaFinal, false);
+                $promo->es_proxima = $hoy->lt($fechaInicio);
                 $promocionesActivas->push($promo);
             }
         }
+
+        $promocionesActivas = $promocionesActivas
+            ->sort(function ($a, $b) {
+                if ($a->es_proxima !== $b->es_proxima) {
+                    return $a->es_proxima <=> $b->es_proxima;
+                }
+
+                if (!$a->es_proxima && $a->dias_restantes !== $b->dias_restantes) {
+                    return $a->dias_restantes <=> $b->dias_restantes;
+                }
+
+                if ($a->es_proxima && !$a->fecha_inicio_carbon->equalTo($b->fecha_inicio_carbon)) {
+                    return $a->fecha_inicio_carbon->timestamp <=> $b->fecha_inicio_carbon->timestamp;
+                }
+
+                return $a->fecha_final_carbon->timestamp <=> $b->fecha_final_carbon->timestamp;
+            })
+            ->values();
 
         $librosVinculados = DB::table('asigna_promociones as ap')
             ->join('ediciones as e', 'ap.edicion_id', '=', 'e.id')
@@ -69,7 +94,12 @@ class PromocionController extends Controller
                 $join->on('ediciones.id', '=', 'ap.edicion_id')
                     ->whereNull('ap.deleted_at');
             })
-            ->leftJoin('promociones as p', 'ap.promocion_id', '=', 'p.id')
+            ->leftJoin('promociones as p', function ($join) use ($hoy) {
+                $join->on('ap.promocion_id', '=', 'p.id')
+                    ->whereNull('p.deleted_at')
+                    ->whereDate('p.fecha_inicio', '<=', $hoy)
+                    ->whereDate('p.fecha_final', '>=', $hoy);
+            })
             ->select(
                 'ediciones.id',
                 'ediciones.isbn',
@@ -81,9 +111,14 @@ class PromocionController extends Controller
                 'p.porcentaje_descuento as promo_descuento'
             )
             ->whereNull('ediciones.deleted_at')
+            ->distinct()
             ->get();
 
-        $promociones = $todasLasPromociones;
+        $promociones = $todasLasPromociones
+            ->filter(function ($promo) use ($hoy) {
+                return Carbon::parse($promo->fecha_final)->startOfDay()->gte($hoy);
+            })
+            ->values();
 
         return view('promociones.index', compact('promocionesActivas', 'promocionesExpiradas', 'librosVinculados', 'ediciones', 'promociones'));
     }
@@ -119,7 +154,13 @@ class PromocionController extends Controller
 
         try {
             $promocion = Promocion::findOrFail($id);
-            $promocion->update($request->only(['nombre', 'fecha_inicio', 'fecha_final', 'porcentaje_descuento']));
+            $promocion->update([
+                'nombre'               => $request->nombre,
+                'fecha_inicio'         => $request->fecha_inicio,
+                'fecha_final'          => $request->fecha_final,
+                'porcentaje_descuento' => $request->porcentaje_descuento,
+                'autorizado_por_id'    => auth()->id(),
+            ]);
             return redirect()->route('promociones.index')->with('status', 'Promoción actualizada.');
         } catch (QueryException $e) {
             return back()->withInput()->withErrors(['error' => 'Error al actualizar la promoción.']);

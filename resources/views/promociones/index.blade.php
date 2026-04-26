@@ -62,7 +62,7 @@
                                     <button type="button" class="btn btn-link p-0 text-decoration-none text-start d-flex align-items-center"
                                             data-bs-toggle="modal" data-bs-target="#modalLibrosPromocion{{ $promocion->id }}"
                                             title="Ver libros vinculados a esta promoción">
-                                        <span class="fw-bold fs-6" style="color: #4b1c71; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: #cdb7dc;">{{ $promocion->nombre }}</span>
+                                        <span class="fw-bold fs-6" style="color: #4b1c71;">{{ $promocion->nombre }}</span>
                                         <span class="badge rounded-pill ms-2" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">
                                             <i class="fa-solid fa-book-open"></i> {{ $cantidadLibros }}
                                         </span>
@@ -79,7 +79,7 @@
                                         <span class="badge bg-info text-dark rounded-pill" style="background-color: #dbb6ee !important; border: 1px solid #7f4ca5;"><i class="fa-solid fa-hourglass-half"></i> Faltan {{ $diasRestantes }} días</span>
                                     @endif
                                 </td>
-                                <td>{{ $promocion->nombre_autorizado }} {{ $promocion->ape_paterno }}</td>
+                                <td>{{ trim(($promocion->nombre_autorizado ?? '') . ' ' . ($promocion->ape_paterno ?? '') . ' ' . ($promocion->ape_materno ?? '')) }}</td>
                                 <td class="text-end">
                                     <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3" data-bs-toggle="modal" data-bs-target="#modalEditPromocion{{ $promocion->id }}"><i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i></button>
                                     <button type="button" class="btn btn-link p-0 text-decoration-none fs-5" data-bs-toggle="modal" data-bs-target="#modalDeletePromocion{{ $promocion->id }}"><i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i></button>
@@ -124,7 +124,7 @@
                                         <td class="text-muted">{{ $loop->iteration }}</td>
                                         <td class="fw-semibold text-muted">
                                             <button type="button" class="btn btn-link p-0 text-decoration-none text-start d-flex align-items-center text-muted" data-bs-toggle="modal" data-bs-target="#modalLibrosPromocion{{ $promocion->id }}">
-                                                <span class="fw-bold fs-6" style="text-decoration: underline; text-underline-offset: 4px;">{{ $promocion->nombre }}</span>
+                                                <span class="fw-bold fs-6">{{ $promocion->nombre }}</span>
                                                 <span class="badge rounded-pill ms-2 bg-light text-secondary border"><i class="fa-solid fa-book-open"></i> {{ $librosDeEstaPromo->count() }}</span>
                                             </button>
                                         </td>
@@ -135,7 +135,7 @@
                                             </div>
                                             <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-circle-xmark"></i> Expirada</span>
                                         </td>
-                                        <td class="text-muted">{{ $promocion->nombre_autorizado }} {{ $promocion->ape_paterno }}</td>
+                                        <td class="text-muted">{{ trim(($promocion->nombre_autorizado ?? '') . ' ' . ($promocion->ape_paterno ?? '') . ' ' . ($promocion->ape_materno ?? '')) }}</td>
                                         <td class="text-end">
                                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3" data-bs-toggle="modal" data-bs-target="#modalRenovarPromocion{{ $promocion->id }}" title="Reprogramar promoción"><i class="fa-solid fa-calendar-plus" style="color: #198754;"></i></button>
                                             <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3 text-muted" data-bs-toggle="modal" data-bs-target="#modalEditPromocion{{ $promocion->id }}"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -182,9 +182,8 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libro (Edición)</label>
-                            <select id="select-libro" name="edicion_id" class="form-select" required>
-                                <option value="" disabled selected>-- Busca y elige un libro --</option>
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libros (Ediciones)</label>
+                            <select id="select-libro" name="edicion_id[]" class="form-select" multiple required>
                                 @foreach($ediciones as $edicion)
                                     <option value="{{ $edicion->id }}"
                                             data-titulo="{{ $edicion->titulo }}"
@@ -199,6 +198,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="selection-preview p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="fw-bold" style="color: #4b1c71;">Vista previa de selección</div>
+                                <span id="selected-books-count" class="badge rounded-pill" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">0 libros</span>
+                            </div>
+                            <div id="selected-books-empty" class="selection-preview-empty text-center">
+                                Selecciona uno o más libros para ver el resumen antes de aplicar la promoción.
+                            </div>
+                            <div id="selected-books-preview" class="d-grid gap-3"></div>
+                        </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
@@ -209,6 +218,7 @@
         </div>
     </div>
 
+    @php $librosDeEstaPromo = collect(); @endphp
     @if(session('confirm_replace'))
         @php $data = session('confirm_replace'); @endphp
         <div class="modal fade" id="modalConfirmReplace" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -261,12 +271,44 @@
                             </div>
                         </div>
                     </div>
+                        @if($librosDeEstaPromo->isNotEmpty())
+                            <div class="mt-4 p-3 rounded-4 text-start" style="background-color: #fff3f3; border: 1px solid #f1c5c5;">
+                                <div class="fw-bold mb-1 text-danger">Libros afectados: {{ $librosDeEstaPromo->count() }}</div>
+                                <div class="small text-muted mb-3">Esta promoción está vinculada actualmente a varios libros.</div>
+                                <div class="text-center text-md-start">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold"
+                                            data-bs-dismiss="modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalLibrosPromocion{{ $promocion->id }}">
+                                        <i class="fa-solid fa-book-open me-1"></i> Ver libros afectados
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+                        @if($librosDeEstaPromo->isNotEmpty())
+                            <div class="mt-4 p-3 rounded-4 text-start" style="background-color: #fff3f3; border: 1px solid #f1c5c5;">
+                                <div class="fw-bold mb-1 text-danger">Libros afectados: {{ $librosDeEstaPromo->count() }}</div>
+                                <div class="small text-muted mb-3">Esta promoción está vinculada actualmente a varios libros.</div>
+                                <div class="text-center text-md-start">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold"
+                                            data-bs-dismiss="modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalLibrosPromocion{{ $promocion->id }}">
+                                        <i class="fa-solid fa-book-open me-1"></i> Ver libros afectados
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal" style="color: #7a6a88;">Mantener Anterior</button>
                         <form action="{{ route('asigna_promociones.store') }}" method="post" class="d-inline">
                             @csrf
                             <input type="hidden" name="promocion_id" value="{{ $data['promocion_id'] }}">
-                            <input type="hidden" name="edicion_id" value="{{ $data['edicion_id'] }}">
+                            @foreach(($data['edicion_ids'] ?? (isset($data['edicion_id']) ? [$data['edicion_id']] : [])) as $edicionId)
+                                <input type="hidden" name="edicion_id[]" value="{{ $edicionId }}">
+                            @endforeach
                             <input type="hidden" name="force_replace" value="1">
                             <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #7f4ca5; transition: all 0.3s;" onmouseover="this.style.backgroundColor='#4b1c71'" onmouseout="this.style.backgroundColor='#7f4ca5'">
                                 Sí, Reemplazar
@@ -536,6 +578,24 @@
                         @csrf
                         @method('PUT')
                         <div class="modal-body p-4">
+                            @if($librosDeEstaPromo->isNotEmpty())
+                                <div class="mb-4 p-3 rounded-4" style="background-color: #f8f2fb; border: 1px solid #eadcf3;">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                        <div>
+                                            <div class="fw-bold mb-1" style="color: #4b1c71;">Libros afectados: {{ $librosDeEstaPromo->count() }}</div>
+                                            <div class="small text-muted">Los cambios en esta promoción impactarán a los libros que ya la tienen asignada.</div>
+                                        </div>
+                                        <button type="button"
+                                                class="btn btn-sm text-white rounded-pill px-3 fw-bold"
+                                                data-bs-dismiss="modal"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalLibrosPromocion{{ $promocion->id }}"
+                                                style="background-color: #4b1c71;">
+                                            <i class="fa-solid fa-book-open me-1"></i> Ver libros afectados
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Nombre de Promoción</label>
@@ -575,6 +635,15 @@
                         <p class="fs-5 mb-1">¿Estás seguro de eliminar <br><strong>"{{ $promocion->nombre }}"</strong>?</p>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                        @if($librosDeEstaPromo->isNotEmpty())
+                            <button type="button"
+                                    class="btn btn-outline-danger rounded-pill px-4 fw-bold"
+                                    data-bs-dismiss="modal"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalLibrosPromocion{{ $promocion->id }}">
+                                Ver {{ $librosDeEstaPromo->count() }} libros afectados
+                            </button>
+                        @endif
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
                         <form action="{{ route('promociones.destroy', $promocion->id) }}" method="post" class="d-inline">
                             @csrf
@@ -604,10 +673,21 @@
         .dropzone:hover, .dropzone.is-dragover { border-color: #7f4ca5; transform: translateY(-1px); box-shadow: 0 12px 24px rgba(127, 76, 165, 0.12); }
         .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .dropzone-preview { width: 86px; height: 118px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 24px rgba(75, 28, 113, 0.16); background: #fff; }
+        .selection-preview { border: 1px solid #eadcf3; border-radius: 18px; background: linear-gradient(180deg, #fcf9ff 0%, #f8f2fb 100%); }
+        .selection-preview-item { border: 1px solid #eadcf3; border-radius: 16px; background: #fff; }
+        .selection-preview-item.active-conflict { border-color: #dbb6ee; box-shadow: 0 10px 24px rgba(127, 76, 165, 0.08); }
+        .selection-preview-cover { width: 52px; height: 72px; object-fit: cover; border-radius: 10px; background: #f8f2fb; }
+        .selection-preview-empty { border: 1px dashed #cfb3e2; border-radius: 12px; padding: 1rem; color: #7a6a88; background: rgba(255,255,255,0.75); }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            document.querySelectorAll('.badge.bg-secondary.rounded-pill').forEach(function(badge) {
+                if (badge.textContent.includes('Pr')) {
+                    badge.innerHTML = '<i class="fa-solid fa-calendar-days me-1" style="color: #fff;"></i> Pr&oacute;ximamente';
+                }
+            });
 
             if (typeof flatpickr !== 'undefined') {
                 let fechaMaxima = new Date();
@@ -651,31 +731,161 @@
                 });
             }
 
+            const previewContainer = document.getElementById("selected-books-preview");
+            const previewEmpty = document.getElementById("selected-books-empty");
+            const previewCount = document.getElementById("selected-books-count");
+            const selectElement = document.getElementById("select-libro");
+            const selectPromoElement = document.getElementById("select-promocion");
+            let selectLibro = null;
+
+            function getCurrentDiscount() {
+                if (!selectPromoElement || !selectPromoElement.value) return 0;
+                const option = selectPromoElement.options[selectPromoElement.selectedIndex];
+                return Number(option?.dataset?.descuento || 0);
+            }
+
+            function formatMoney(value) {
+                return `$ ${Number(value || 0).toFixed(2)}`;
+            }
+
+            function renderSelectedBooksPreview() {
+                if (!previewContainer || !previewEmpty || !previewCount || !selectElement || !selectLibro) return;
+
+                const selectedIds = selectLibro.items || [];
+                previewContainer.innerHTML = "";
+                previewCount.textContent = `${selectedIds.length} libro${selectedIds.length === 1 ? '' : 's'}`;
+
+                if (!selectedIds.length) {
+                    previewEmpty.classList.remove("d-none");
+                    return;
+                }
+
+                previewEmpty.classList.add("d-none");
+                const descuentoActual = getCurrentDiscount();
+
+                selectedIds.forEach(function(id) {
+                    const option = selectElement.querySelector(`option[value="${id}"]`);
+                    if (!option) return;
+
+                    const titulo = option.dataset.titulo || "Sin título";
+                    const isbn = option.dataset.isbn || "N/A";
+                    const precio = Number(option.dataset.precio || 0);
+                    const promoActual = option.dataset.promocion || "";
+                    const promoDescuento = option.dataset.descuento || "";
+                    const portada = option.dataset.portada ? `/storage/${option.dataset.portada}` : "";
+                    const precioNuevo = precio - (precio * (descuentoActual / 100));
+                    const conflictClass = promoActual ? "active-conflict" : "";
+                    const promoActualHtml = promoActual
+                        ? `<span class="badge rounded-pill" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">${promoActual} ${promoDescuento ? `(-${promoDescuento}%)` : ''}</span>`
+                        : '<span class="text-muted small">Sin promoción activa</span>';
+
+                    const card = document.createElement("div");
+                    card.className = `selection-preview-item ${conflictClass} p-3`;
+                    card.innerHTML = `
+                        <div class="d-flex gap-3 align-items-start">
+                            <div>
+                                ${portada
+                                    ? `<img src="${portada}" alt="${titulo}" class="selection-preview-cover" loading="lazy">`
+                                    : `<div class="selection-preview-cover d-flex align-items-center justify-content-center text-muted small">Sin imagen</div>`
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <div class="fw-bold" style="color: #4b1c71;">${titulo}</div>
+                                        <div class="small text-muted mb-2">ISBN: ${isbn}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-danger js-remove-selected-book" data-id="${id}" title="Quitar de la selección">
+                                        <i class="fa-solid fa-circle-xmark fs-5"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Precio original</div>
+                                        <div class="fw-semibold">${formatMoney(precio)}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Precio con promoción</div>
+                                        <div class="fw-bold text-success">${formatMoney(precioNuevo)}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Promoción actual</div>
+                                        <div>${promoActualHtml}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    previewContainer.appendChild(card);
+                });
+
+                previewContainer.querySelectorAll(".js-remove-selected-book").forEach(function(button) {
+                    button.addEventListener("click", function() {
+                        selectLibro.removeItem(this.dataset.id);
+                        renderSelectedBooksPreview();
+                    });
+                });
+            }
+
             if (document.getElementById("select-libro")) {
-                new TomSelect("#select-libro", {
+                selectLibro = new TomSelect("#select-libro", {
+                    plugins: ['clear_button'],
+                    maxItems: null,
+                    hideSelected: true,
+                    closeAfterSelect: false,
                     render: {
                         option: function(data, escape) {
                             let portada = data.$option.dataset.portada ? `/storage/${data.$option.dataset.portada}` : 'https://via.placeholder.com/50x70?text=No+Img';
-                            let promoHTML = data.$option.dataset.promocion ? `<div class="small text-warning fw-bold"> ${escape(data.$option.dataset.promocion)} (${data.$option.dataset.descuento}%)</div>` : '';
+                            let promo = data.$option.dataset.promocion;
+                            let descuento = data.$option.dataset.descuento;
+                            let promoHTML = '';
+
+                            if (promo) {
+                                promoHTML = `
+                                <div class="mt-1 p-1 rounded" style="background-color: #fff0ff; border: 1px dashed #dbb6ee;">
+                                    <div class="small fw-bold" style="color: #4b1c71;">
+                                        <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Ya tiene promoción activa:
+                                    </div>
+                                    <div class="small text-muted">${escape(promo)} <span class="badge bg-success ms-1">-${descuento}%</span></div>
+                                </div>`;
+                            }
                             return `
-                            <div class="d-flex align-items-center gap-2 p-2">
-                                <img src="${portada}" loading="lazy" style="width:40px; height:55px; object-fit:cover; border-radius:6px;">
-                                <div>
-                                    <div class="fw-bold">${escape(data.$option.dataset.titulo)}</div>
-                                    <div class="small text-muted">ISBN: ${escape(data.$option.dataset.isbn)}</div>
+                            <div class="d-flex align-items-start gap-3 p-2 border-bottom">
+                                <img src="${portada}" loading="lazy" style="width:45px; height:65px; object-fit:cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-dark">${escape(data.$option.dataset.titulo)}</div>
+                                    <div class="d-flex justify-content-between">
+                                        <div class="small text-muted">ISBN: ${escape(data.$option.dataset.isbn)}</div>
+                                        <div class="small text-success fw-bold">$ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}</div>
+                                    </div>
                                     ${promoHTML}
                                 </div>
                             </div>`;
+                        },
+                        item: function(data, escape) {
+                            return `<div class="fw-semibold">${escape(data.text)}</div>`;
                         }
+                    },
+                    onChange: function() {
+                        renderSelectedBooksPreview();
                     }
                 });
             }
+
+            if (selectPromo) {
+                selectPromo.on("change", function() {
+                    renderSelectedBooksPreview();
+                });
+            }
+
+            renderSelectedBooksPreview();
 
             document.querySelectorAll('.btn-asignar-promo').forEach(btn => {
                 btn.addEventListener('click', function() {
                     if(selectPromo) {
                         selectPromo.setValue(this.dataset.promoId);
                     }
+                    renderSelectedBooksPreview();
                 });
             });
 

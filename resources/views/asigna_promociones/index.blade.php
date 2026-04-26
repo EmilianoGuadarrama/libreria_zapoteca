@@ -21,7 +21,20 @@
         .dropzone-preview { width: 86px; height: 118px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 24px rgba(75, 28, 113, 0.16); background: #fff; }
         .zoom-container { width: 200px; height: 300px; overflow: hidden; position: relative; border-radius: 12px; }
         .zoom-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s ease; }
+        .contenedor-colapsable { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease-out; }
+        .contenedor-colapsable.abierto { max-height: 4000px; opacity: 1; transition: max-height 0.6s ease-in-out, opacity 0.4s ease-in; }
+        .rotar-icono { transform: rotate(180deg); }
+        #btnToggleExpiradasAsignaciones:hover { background-color: #f0e6f7 !important; }
+        .selection-preview { border: 1px solid #eadcf3; border-radius: 18px; background: linear-gradient(180deg, #fcf9ff 0%, #f8f2fb 100%); }
+        .selection-preview-item { border: 1px solid #eadcf3; border-radius: 16px; background: #fff; }
+        .selection-preview-item.active-conflict { border-color: #dbb6ee; box-shadow: 0 10px 24px rgba(127, 76, 165, 0.08); }
+        .selection-preview-cover { width: 52px; height: 72px; object-fit: cover; border-radius: 10px; background: #f8f2fb; }
+        .selection-preview-empty { border: 1px dashed #cfb3e2; border-radius: 12px; padding: 1rem; color: #7a6a88; background: rgba(255,255,255,0.75); }
     </style>
+
+    @php
+        $todasLasAsignaciones = $asignacionesActivas->merge($asignacionesExpiradas);
+    @endphp
 
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -48,94 +61,193 @@
             </div>
         @endif
 
-        <div class="table-responsive mb-4">
-            <table class="table table-bordered table-striped mi-datatable align-middle" style="width:100%">
-                <thead style="background-color: #f8f2fb;">
-                <tr>
-                    <th>#</th>
-                    <th>Imagen</th>
-                    <th>Libro</th>
-                    <th>ISBN</th>
-                    <th>Promoción Aplicada</th>
-                    <th>Descuento</th>
-                    <th>Vigencia</th> <th class="text-end">Acciones</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach($asignaciones as $asignacion)
-                    @php
-                        $precioOriginal = (float) ($asignacion->precio_venta ?? 0);
-                        $descuento = (float) ($asignacion->porcentaje_descuento ?? 0);
-                        $precioFinal = $precioOriginal - ($precioOriginal * ($descuento / 100));
-                        $portadaUrl = !empty($asignacion->portada) ? asset('storage/' . $asignacion->portada) : '';
-
-                        $fechaFinal = isset($asignacion->fecha_final) ? \Carbon\Carbon::parse($asignacion->fecha_final)->startOfDay() : null;
-                        $diasRestantes = $fechaFinal ? now()->startOfDay()->diffInDays($fechaFinal, false) : 0;
-                    @endphp
-                    <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td class="text-center">
-                            <button type="button"
-                                    class="book-thumb-btn js-open-book-detail"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalDetalleLibro"
-                                    data-edicion-id="{{ $asignacion->edicion_id }}"
-                                    data-update-url="{{ route('asigna_promociones.portada.update', $asignacion->edicion_id) }}"
-                                    data-titulo="{{ $asignacion->libro_titulo }}"
-                                    data-isbn="{{ $asignacion->isbn }}"
-                                    data-autor="{{ $asignacion->autor ?? 'N/A' }}"
-                                    data-editorial="{{ $asignacion->editorial ?? 'N/A' }}"
-                                    data-anio="{{ $asignacion->anio_publicacion ?? 'N/A' }}"
-                                    data-numero-edicion="{{ $asignacion->numero_edicion ?? 'N/A' }}"
-                                    data-numero-paginas="{{ $asignacion->numero_paginas ?? 'N/A' }}"
-                                    data-existencias="{{ $asignacion->existencias ?? 'N/A' }}"
-                                    data-stock-minimo="{{ $asignacion->stock_minimo ?? 'N/A' }}"
-                                    data-promocion="{{ $asignacion->promocion_nombre }}"
-                                    data-descuento="{{ $descuento }}"
-                                    data-precio-original="{{ $precioOriginal }}"
-                                    data-precio-final="{{ $precioFinal }}"
-                                    data-alt-imagen="{{ $asignacion->alt_imagen ?? 'Sin imagen' }}"
-                                    data-imagen="{{ $portadaUrl }}"
-                                    title="Ver detalles del libro">
-                                @if($portadaUrl)
-                                    <img src="{{ $portadaUrl }}" alt="{{ $asignacion->alt_imagen ?? $asignacion->libro_titulo }}" class="book-thumb" loading="lazy" decoding="async">
-                                @else
-                                    <div class="book-thumb-placeholder d-flex align-items-center justify-content-center mx-auto">Sin imagen</div>
-                                @endif
-                            </button>
-                        </td>
-                        <td class="fw-bold" style="color: #4b1c71;">{{ $asignacion->libro_titulo }}</td>
-                        <td><small class="text-muted">{{ $asignacion->isbn }}</small></td>
-                        <td>{{ $asignacion->promocion_nombre }}</td>
-                        <td><span class="badge bg-success">{{ number_format($descuento, 0) }}%</span></td>
-
-                        <td>
-                            @if($fechaFinal)
-                                @if($diasRestantes < 0)
-                                    <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-circle-xmark"></i> Expirada</span>
-                                @elseif($diasRestantes == 0)
-                                    <span class="badge bg-warning text-dark rounded-pill"><i class="fa-solid fa-clock"></i> Expira hoy</span>
-                                @else
-                                    <span class="badge bg-info text-dark rounded-pill" style="background-color: #dbb6ee !important;"><i class="fa-solid fa-hourglass-half"></i> Faltan {{ $diasRestantes }} días</span>
-                                @endif
-                                <div class="small text-muted mt-1 fw-semibold">Hasta {{ $fechaFinal->format('d/m/Y') }}</div>
-                            @else
-                                <span class="text-muted small">Sin fecha</span>
-                            @endif
-                        </td>
-
-                        <td class="text-end">
-                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 text-danger"
-                                    data-bs-toggle="modal" data-bs-target="#modalQuitarAsignacion{{ $asignacion->id }}"
-                                    title="Quitar Oferta del Libro">
-                                <i class="fa-solid fa-link-slash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
+        <div class="card border-0 shadow-sm mb-5" style="border-radius: 16px; overflow: hidden;">
+            <div class="card-header border-0 py-3" style="background-color: #f8f2fb;">
+                <h5 class="mb-0 fw-bold" style="color: #4b1c71;">Promociones Vigentes y Programadas</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive p-3">
+                    <table class="table table-bordered table-striped mi-datatable align-middle" style="width:100%">
+                        <thead style="background-color: #f8f2fb;">
+                        <tr>
+                            <th>#</th>
+                            <th>Imagen</th>
+                            <th>Libro</th>
+                            <th>ISBN</th>
+                            <th>Promoción Aplicada</th>
+                            <th>Descuento</th>
+                            <th>Vigencia</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($asignacionesActivas as $asignacion)
+                            @php
+                                $precioOriginal = (float) ($asignacion->precio_venta ?? 0);
+                                $descuento = (float) ($asignacion->porcentaje_descuento ?? 0);
+                                $precioFinal = $precioOriginal - ($precioOriginal * ($descuento / 100));
+                                $portadaUrl = !empty($asignacion->portada) ? asset('storage/' . $asignacion->portada) : '';
+                                $fechaInicio = isset($asignacion->fecha_inicio) ? \Carbon\Carbon::parse($asignacion->fecha_inicio)->startOfDay() : null;
+                                $fechaFinal = isset($asignacion->fecha_final) ? \Carbon\Carbon::parse($asignacion->fecha_final)->startOfDay() : null;
+                                $hoy = now()->startOfDay();
+                                $diasRestantes = $fechaFinal ? $hoy->diffInDays($fechaFinal, false) : 0;
+                            @endphp
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="book-thumb-btn js-open-book-detail"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDetalleLibro"
+                                            data-edicion-id="{{ $asignacion->edicion_id }}"
+                                            data-update-url="{{ route('asigna_promociones.portada.update', $asignacion->edicion_id) }}"
+                                            data-titulo="{{ $asignacion->libro_titulo }}"
+                                            data-isbn="{{ $asignacion->isbn }}"
+                                            data-autor="{{ $asignacion->autor ?? 'N/A' }}"
+                                            data-editorial="{{ $asignacion->editorial ?? 'N/A' }}"
+                                            data-anio="{{ $asignacion->anio_publicacion ?? 'N/A' }}"
+                                            data-numero-edicion="{{ $asignacion->numero_edicion ?? 'N/A' }}"
+                                            data-numero-paginas="{{ $asignacion->numero_paginas ?? 'N/A' }}"
+                                            data-existencias="{{ $asignacion->existencias ?? 'N/A' }}"
+                                            data-stock-minimo="{{ $asignacion->stock_minimo ?? 'N/A' }}"
+                                            data-promocion="{{ $asignacion->promocion_nombre }}"
+                                            data-descuento="{{ $descuento }}"
+                                            data-precio-original="{{ $precioOriginal }}"
+                                            data-precio-final="{{ $precioFinal }}"
+                                            data-alt-imagen="{{ $asignacion->alt_imagen ?? 'Sin imagen' }}"
+                                            data-imagen="{{ $portadaUrl }}"
+                                            title="Ver detalles del libro">
+                                        @if($portadaUrl)
+                                            <img src="{{ $portadaUrl }}" alt="{{ $asignacion->alt_imagen ?? $asignacion->libro_titulo }}" class="book-thumb" loading="lazy" decoding="async">
+                                        @else
+                                            <div class="book-thumb-placeholder d-flex align-items-center justify-content-center mx-auto">Sin imagen</div>
+                                        @endif
+                                    </button>
+                                </td>
+                                <td class="fw-bold" style="color: #4b1c71;">{{ $asignacion->libro_titulo }}</td>
+                                <td><small class="text-muted">{{ $asignacion->isbn }}</small></td>
+                                <td>{{ $asignacion->promocion_nombre }}</td>
+                                <td><span class="badge bg-success">{{ number_format($descuento, 0) }}%</span></td>
+                                <td>
+                                    @if($fechaFinal)
+                                        <div class="small text-muted mb-1">{{ $fechaInicio?->format('d/m/Y') }} — {{ $fechaFinal->format('d/m/Y') }}</div>
+                                        @if($fechaInicio && $hoy->lt($fechaInicio))
+                                            <span class="badge bg-secondary rounded-pill"><i class="fa-solid fa-calendar-days me-1"></i> Próximamente</span>
+                                        @elseif($diasRestantes == 0)
+                                            <span class="badge bg-warning text-dark rounded-pill"><i class="fa-solid fa-clock"></i> Expira hoy</span>
+                                        @else
+                                            <span class="badge bg-info text-dark rounded-pill" style="background-color: #dbb6ee !important;"><i class="fa-solid fa-hourglass-half"></i> Faltan {{ $diasRestantes }} días</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted small">Sin fecha</span>
+                                    @endif
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 text-danger"
+                                            data-bs-toggle="modal" data-bs-target="#modalQuitarAsignacion{{ $asignacion->id }}"
+                                            title="Quitar Oferta del Libro">
+                                        <i class="fa-solid fa-link-slash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        @if($asignacionesExpiradas->count() > 0)
+            <div class="shadow-sm mb-4" style="border-radius: 16px; overflow: hidden; border: 1px solid #eadcf3; background: #fff;">
+                <button id="btnToggleExpiradasAsignaciones" class="w-100 text-start border-0 fw-bold p-3 d-flex justify-content-between align-items-center" style="background-color: #fcf9ff; color: #4b1c71; cursor: pointer; transition: background-color 0.2s;">
+                    <span>
+                        <i class="fa-solid fa-box-archive me-2 text-muted"></i>
+                        Promociones Expiradas ({{ $asignacionesExpiradas->count() }})
+                    </span>
+                    <i id="iconoToggleExpiradasAsignaciones" class="fa-solid fa-chevron-down text-muted" style="transition: transform 0.3s ease;"></i>
+                </button>
+                <div id="contenedorTablaExpiradasAsignaciones" class="contenedor-colapsable">
+                    <div class="p-3 border-top">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped mi-datatable align-middle" style="width:100%">
+                                <thead style="background-color: #f4f4f4;">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Imagen</th>
+                                    <th>Libro</th>
+                                    <th>ISBN</th>
+                                    <th>Promoción Aplicada</th>
+                                    <th>Descuento</th>
+                                    <th>Vigencia Pasada</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($asignacionesExpiradas as $asignacion)
+                                    @php
+                                        $precioOriginal = (float) ($asignacion->precio_venta ?? 0);
+                                        $descuento = (float) ($asignacion->porcentaje_descuento ?? 0);
+                                        $precioFinal = $precioOriginal - ($precioOriginal * ($descuento / 100));
+                                        $portadaUrl = !empty($asignacion->portada) ? asset('storage/' . $asignacion->portada) : '';
+                                    @endphp
+                                    <tr>
+                                        <td class="text-muted">{{ $loop->iteration }}</td>
+                                        <td class="text-center">
+                                            <button type="button"
+                                                    class="book-thumb-btn js-open-book-detail"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalDetalleLibro"
+                                                    data-edicion-id="{{ $asignacion->edicion_id }}"
+                                                    data-update-url="{{ route('asigna_promociones.portada.update', $asignacion->edicion_id) }}"
+                                                    data-titulo="{{ $asignacion->libro_titulo }}"
+                                                    data-isbn="{{ $asignacion->isbn }}"
+                                                    data-autor="{{ $asignacion->autor ?? 'N/A' }}"
+                                                    data-editorial="{{ $asignacion->editorial ?? 'N/A' }}"
+                                                    data-anio="{{ $asignacion->anio_publicacion ?? 'N/A' }}"
+                                                    data-numero-edicion="{{ $asignacion->numero_edicion ?? 'N/A' }}"
+                                                    data-numero-paginas="{{ $asignacion->numero_paginas ?? 'N/A' }}"
+                                                    data-existencias="{{ $asignacion->existencias ?? 'N/A' }}"
+                                                    data-stock-minimo="{{ $asignacion->stock_minimo ?? 'N/A' }}"
+                                                    data-promocion="{{ $asignacion->promocion_nombre }}"
+                                                    data-descuento="{{ $descuento }}"
+                                                    data-precio-original="{{ $precioOriginal }}"
+                                                    data-precio-final="{{ $precioFinal }}"
+                                                    data-alt-imagen="{{ $asignacion->alt_imagen ?? 'Sin imagen' }}"
+                                                    data-imagen="{{ $portadaUrl }}"
+                                                    title="Ver detalles del libro">
+                                                @if($portadaUrl)
+                                                    <img src="{{ $portadaUrl }}" alt="{{ $asignacion->alt_imagen ?? $asignacion->libro_titulo }}" class="book-thumb" loading="lazy" decoding="async">
+                                                @else
+                                                    <div class="book-thumb-placeholder d-flex align-items-center justify-content-center mx-auto">Sin imagen</div>
+                                                @endif
+                                            </button>
+                                        </td>
+                                        <td class="fw-bold text-muted">{{ $asignacion->libro_titulo }}</td>
+                                        <td><small class="text-muted">{{ $asignacion->isbn }}</small></td>
+                                        <td class="text-muted">{{ $asignacion->promocion_nombre }}</td>
+                                        <td><span class="badge bg-secondary">{{ number_format($descuento, 0) }}%</span></td>
+                                        <td>
+                                            <div class="small text-muted mb-1">
+                                                {{ \Carbon\Carbon::parse($asignacion->fecha_inicio)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($asignacion->fecha_final)->format('d/m/Y') }}
+                                            </div>
+                                            <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-circle-xmark"></i> Expirada</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 text-muted"
+                                                    data-bs-toggle="modal" data-bs-target="#modalQuitarAsignacion{{ $asignacion->id }}"
+                                                    title="Ocultar del listado">
+                                                <i class="fa-solid fa-link-slash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="modal fade" id="modalAssignPromocion" tabindex="-1" aria-hidden="true">
@@ -151,7 +263,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Promoción</label>
                             <select id="select-promocion" name="promocion_id" class="form-select" required>
-                                <option value="" disabled selected>-- Elige una promoción activa --</option>
+                                <option value="" disabled selected>-- Elige una promoción disponible --</option>
                                 @foreach($promociones as $promo)
                                     @php
                                         $fechaFinPromo = isset($promo->fecha_final) ? \Carbon\Carbon::parse($promo->fecha_final)->startOfDay() : now()->startOfDay();
@@ -167,9 +279,8 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libro (Edición)</label>
-                            <select id="select-libro" name="edicion_id" class="form-select" required>
-                                <option value="" disabled selected>-- Busca y elige un libro --</option>
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Seleccionar Libros (Ediciones)</label>
+                            <select id="select-libro" name="edicion_id[]" class="form-select" multiple required>
                                 @foreach($ediciones as $edicion)
                                     <option value="{{ $edicion->id }}"
                                             data-titulo="{{ $edicion->titulo }}"
@@ -183,6 +294,16 @@
                                     </option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="selection-preview p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="fw-bold" style="color: #4b1c71;">Vista previa de selección</div>
+                                <span id="selected-books-count" class="badge rounded-pill" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">0 libros</span>
+                            </div>
+                            <div id="selected-books-empty" class="selection-preview-empty text-center">
+                                Selecciona uno o más libros para ver el resumen antes de aplicar la promoción.
+                            </div>
+                            <div id="selected-books-preview" class="d-grid gap-3"></div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
@@ -267,7 +388,7 @@
         </div>
     </div>
 
-    @foreach($asignaciones as $asignacion)
+    @foreach($todasLasAsignaciones as $asignacion)
         <div class="modal fade" id="modalQuitarAsignacion{{ $asignacion->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
@@ -323,55 +444,100 @@
     @if(session('confirm_replace'))
         @php $data = session('confirm_replace'); @endphp
         <div class="modal fade" id="modalConfirmReplace" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered {{ !empty($data['libros']) ? 'modal-lg' : '' }}">
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                     <div class="modal-header border-0" style="background-color: #7f4ca5; color: white; border-radius: 20px 20px 0 0;">
                         <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-code-compare me-2"></i> Reemplazar Oferta</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-4 text-center mb-3 mb-md-0">
-                                @if(!empty($data['portada']))
-                                    <img src="{{ asset('storage/' . $data['portada']) }}" alt="{{ $data['alt_imagen'] ?? 'Portada' }}" class="img-fluid rounded shadow-sm" style="max-height: 160px;" loading="lazy" decoding="async">
-                                @else
-                                    <div class="text-muted fst-italic">{{ $data['alt_imagen'] ?? 'Sin imagen' }}</div>
-                                @endif
+                        @if(!empty($data['libros']))
+                            <div class="mb-3 p-3 rounded-4" style="background-color: #f3e8ff;">
+                                <div class="fw-bold mb-1" style="color:#4b1c71;">Se detectaron {{ $data['total_replace'] ?? count($data['libros']) }} libros con promoción activa</div>
+                                <div class="small text-muted">Se reemplazará su promoción actual por <strong>{{ $data['new_promocion_nombre'] }}</strong>. Los demás libros seleccionados se asignarán directamente.</div>
                             </div>
-                            <div class="col-md-8">
-                                <h5 class="fw-bold mb-1" style="color:#4b1c71;">{{ $data['libro_titulo'] }}</h5>
-                                <p class="text-muted small mb-2">ISBN: {{ $data['isbn'] }}</p>
-                                <p class="mb-1 small"><strong>Autor:</strong> {{ $data['autor'] ?? 'N/A' }}</p>
-                                <p class="mb-2 small"><strong>Editorial:</strong> {{ $data['editorial'] ?? 'N/A' }}</p>
-                                @php
-                                    $precio = $data['precio'] ?? 0;
-                                    $descuento = $data['descuento'] ?? 0;
-                                    $precioFinal = $precio - ($precio * ($descuento / 100));
-                                @endphp
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <span class="text-muted small"><del>$ {{ number_format($precio, 2) }}</del></span>
-                                    <span class="fw-bold text-success">$ {{ number_format($precioFinal, 2) }}</span>
-                                    <span class="badge bg-success">-{{ $descuento }}%</span>
+                            <div class="d-grid gap-3">
+                                @foreach($data['libros'] as $libro)
+                                    @php
+                                        $precio = $libro['precio'] ?? 0;
+                                        $descuento = $data['descuento'] ?? 0;
+                                        $precioFinal = $precio - ($precio * ($descuento / 100));
+                                    @endphp
+                                    <div class="selection-preview-item active-conflict p-3">
+                                        <div class="row align-items-center g-3">
+                                            <div class="col-md-2 text-center">
+                                                @if(!empty($libro['portada']))
+                                                    <img src="{{ asset('storage/' . $libro['portada']) }}" alt="{{ $libro['alt_imagen'] ?? 'Portada' }}" class="img-fluid rounded shadow-sm" style="max-height: 100px;" loading="lazy" decoding="async">
+                                                @else
+                                                    <div class="text-muted fst-italic small">{{ $libro['alt_imagen'] ?? 'Sin imagen' }}</div>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-7">
+                                                <h6 class="fw-bold mb-1" style="color:#4b1c71;">{{ $libro['libro_titulo'] }}</h6>
+                                                <p class="text-muted small mb-1">ISBN: {{ $libro['isbn'] }}</p>
+                                                <p class="mb-1 small"><strong>Autor:</strong> {{ $libro['autor'] ?? 'N/A' }}</p>
+                                                <p class="mb-2 small"><strong>Editorial:</strong> {{ $libro['editorial'] ?? 'N/A' }}</p>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <span class="badge bg-light text-dark border">{{ $libro['old_promocion_nombre'] }}</span>
+                                                    <i class="fa-solid fa-arrow-right text-muted"></i>
+                                                    <span class="badge text-white" style="background-color:#4b1c71;">{{ $data['new_promocion_nombre'] }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 text-md-end">
+                                                <div class="text-muted small"><del>$ {{ number_format($precio, 2) }}</del></div>
+                                                <div class="fw-bold text-success">$ {{ number_format($precioFinal, 2) }}</div>
+                                                <span class="badge bg-success">-{{ $descuento }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="row align-items-center">
+                                <div class="col-md-4 text-center mb-3 mb-md-0">
+                                    @if(!empty($data['portada']))
+                                        <img src="{{ asset('storage/' . $data['portada']) }}" alt="{{ $data['alt_imagen'] ?? 'Portada' }}" class="img-fluid rounded shadow-sm" style="max-height: 160px;" loading="lazy" decoding="async">
+                                    @else
+                                        <div class="text-muted fst-italic">{{ $data['alt_imagen'] ?? 'Sin imagen' }}</div>
+                                    @endif
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <span class="badge bg-light text-dark border">{{ $data['old_promocion_nombre'] }}</span>
-                                    <i class="fa-solid fa-arrow-right text-muted"></i>
-                                    <span class="badge text-white" style="background-color:#4b1c71;">{{ $data['new_promocion_nombre'] }}</span>
-                                </div>
-                                <div class="mt-2 p-2 rounded" style="background-color: #f3e8ff;">
-                                    <p class="mb-0 small fw-semibold" style="color:#4b1c71;">
-                                        <i class="fa-solid fa-code-compare me-1"></i> Se reemplazara la promoción actual por la nueva
-                                    </p>
+                                <div class="col-md-8">
+                                    <h5 class="fw-bold mb-1" style="color:#4b1c71;">{{ $data['libro_titulo'] }}</h5>
+                                    <p class="text-muted small mb-2">ISBN: {{ $data['isbn'] }}</p>
+                                    <p class="mb-1 small"><strong>Autor:</strong> {{ $data['autor'] ?? 'N/A' }}</p>
+                                    <p class="mb-2 small"><strong>Editorial:</strong> {{ $data['editorial'] ?? 'N/A' }}</p>
+                                    @php
+                                        $precio = $data['precio'] ?? 0;
+                                        $descuento = $data['descuento'] ?? 0;
+                                        $precioFinal = $precio - ($precio * ($descuento / 100));
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span class="text-muted small"><del>$ {{ number_format($precio, 2) }}</del></span>
+                                        <span class="fw-bold text-success">$ {{ number_format($precioFinal, 2) }}</span>
+                                        <span class="badge bg-success">-{{ $descuento }}%</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span class="badge bg-light text-dark border">{{ $data['old_promocion_nombre'] }}</span>
+                                        <i class="fa-solid fa-arrow-right text-muted"></i>
+                                        <span class="badge text-white" style="background-color:#4b1c71;">{{ $data['new_promocion_nombre'] }}</span>
+                                    </div>
+                                    <div class="mt-2 p-2 rounded" style="background-color: #f3e8ff;">
+                                        <p class="mb-0 small fw-semibold" style="color:#4b1c71;">
+                                            <i class="fa-solid fa-code-compare me-1"></i> Se reemplazara la promoción activa actual por la nueva
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal" style="color: #7a6a88;">Mantener Anterior</button>
                         <form action="{{ route('asigna_promociones.store') }}" method="post" class="d-inline">
                             @csrf
                             <input type="hidden" name="promocion_id" value="{{ $data['promocion_id'] }}">
-                            <input type="hidden" name="edicion_id" value="{{ $data['edicion_id'] }}">
+                            @foreach(($data['edicion_ids'] ?? (isset($data['edicion_id']) ? [$data['edicion_id']] : [])) as $edicionId)
+                                <input type="hidden" name="edicion_id[]" value="{{ $edicionId }}">
+                            @endforeach
                             <input type="hidden" name="force_replace" value="1">
                             <button type="submit" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #7f4ca5; transition: all 0.3s;" onmouseover="this.style.backgroundColor='#4b1c71'" onmouseout="this.style.backgroundColor='#7f4ca5'">Si, Reemplazar</button>
                         </form>
@@ -390,15 +556,120 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            const btnToggle = document.getElementById('btnToggleExpiradasAsignaciones');
+            const contenedor = document.getElementById('contenedorTablaExpiradasAsignaciones');
+            const icono = document.getElementById('iconoToggleExpiradasAsignaciones');
 
-            // Selector de Promociones
-            new TomSelect("#select-promocion", {
+            if (btnToggle && contenedor) {
+                btnToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    contenedor.classList.toggle('abierto');
+                    icono.classList.toggle('rotar-icono');
+                });
+            }
+
+            const previewContainer = document.getElementById("selected-books-preview");
+            const previewEmpty = document.getElementById("selected-books-empty");
+            const previewCount = document.getElementById("selected-books-count");
+            const selectElement = document.getElementById("select-libro");
+            const selectPromoElement = document.getElementById("select-promocion");
+            let selectLibro = null;
+
+            function getCurrentDiscount() {
+                if (!selectPromoElement || !selectPromoElement.value) return 0;
+                const option = selectPromoElement.options[selectPromoElement.selectedIndex];
+                return Number(option?.dataset?.descuento || 0);
+            }
+
+            function formatMoney(value) {
+                return `$ ${Number(value || 0).toFixed(2)}`;
+            }
+
+            function renderSelectedBooksPreview() {
+                if (!previewContainer || !previewEmpty || !previewCount || !selectElement || !selectLibro) return;
+
+                const selectedIds = selectLibro.items || [];
+                previewContainer.innerHTML = "";
+                previewCount.textContent = `${selectedIds.length} libro${selectedIds.length === 1 ? '' : 's'}`;
+
+                if (!selectedIds.length) {
+                    previewEmpty.classList.remove("d-none");
+                    return;
+                }
+
+                previewEmpty.classList.add("d-none");
+                const descuentoActual = getCurrentDiscount();
+
+                selectedIds.forEach(function(id) {
+                    const option = selectElement.querySelector(`option[value="${id}"]`);
+                    if (!option) return;
+
+                    const titulo = option.dataset.titulo || "Sin título";
+                    const isbn = option.dataset.isbn || "N/A";
+                    const precio = Number(option.dataset.precio || 0);
+                    const promoActual = option.dataset.promocion || "";
+                    const promoDescuento = option.dataset.descuento || "";
+                    const portada = option.dataset.portada ? `/storage/${option.dataset.portada}` : "";
+                    const precioNuevo = precio - (precio * (descuentoActual / 100));
+                    const conflictClass = promoActual ? "active-conflict" : "";
+                    const promoActualHtml = promoActual
+                        ? `<span class="badge rounded-pill" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">${promoActual} ${promoDescuento ? `(-${promoDescuento}%)` : ''}</span>`
+                        : '<span class="text-muted small">Sin promoción activa</span>';
+
+                    const card = document.createElement("div");
+                    card.className = `selection-preview-item ${conflictClass} p-3`;
+                    card.innerHTML = `
+                        <div class="d-flex gap-3 align-items-start">
+                            <div>
+                                ${portada
+                                    ? `<img src="${portada}" alt="${titulo}" class="selection-preview-cover" loading="lazy">`
+                                    : `<div class="selection-preview-cover d-flex align-items-center justify-content-center text-muted small">Sin imagen</div>`
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <div class="fw-bold" style="color: #4b1c71;">${titulo}</div>
+                                        <div class="small text-muted mb-2">ISBN: ${isbn}</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-danger js-remove-selected-book" data-id="${id}" title="Quitar de la selección">
+                                        <i class="fa-solid fa-circle-xmark fs-5"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Precio original</div>
+                                        <div class="fw-semibold">${formatMoney(precio)}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Precio con promoción</div>
+                                        <div class="fw-bold text-success">${formatMoney(precioNuevo)}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Promoción actual</div>
+                                        <div>${promoActualHtml}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    previewContainer.appendChild(card);
+                });
+
+                previewContainer.querySelectorAll(".js-remove-selected-book").forEach(function(button) {
+                    button.addEventListener("click", function() {
+                        selectLibro.removeItem(this.dataset.id);
+                        renderSelectedBooksPreview();
+                    });
+                });
+            }
+
+            const selectPromo = new TomSelect("#select-promocion", {
                 render: {
                     option: function(data, escape) {
                         let dias = parseInt(data.$option.dataset.dias);
                         let badgeDias = '';
-                        if (dias < 0) { badgeDias = '<span class="badge bg-danger">Expirada</span>'; }
-                        else if (dias === 0) { badgeDias = '<span class="badge bg-warning text-dark">Expira Hoy</span>'; }
+                        if (dias === 0) { badgeDias = '<span class="badge bg-warning text-dark">Expira Hoy</span>'; }
                         else { badgeDias = `<span class="badge" style="background-color: #dbb6ee; color: #4b1c71;">Faltan ${dias} días</span>`; }
 
                         return `
@@ -419,8 +690,11 @@
                 }
             });
 
-            // Selector de Libros
-            new TomSelect("#select-libro", {
+            selectLibro = new TomSelect("#select-libro", {
+                plugins: ['clear_button'],
+                maxItems: null,
+                hideSelected: true,
+                closeAfterSelect: false,
                 render: {
                     option: function(data, escape) {
                         let portada = data.$option.dataset.portada ? `/storage/${data.$option.dataset.portada}` : 'https://via.placeholder.com/50x70?text=No+Img';
@@ -454,8 +728,17 @@
                     item: function(data, escape) {
                         return `<div class="fw-semibold">${escape(data.text)}</div>`;
                     }
+                },
+                onChange: function() {
+                    renderSelectedBooksPreview();
                 }
             });
+
+            selectPromo.on("change", function() {
+                renderSelectedBooksPreview();
+            });
+
+            renderSelectedBooksPreview();
 
             document.querySelectorAll(".zoom-container").forEach(function(container) {
                 const img = container.querySelector(".zoom-img");
