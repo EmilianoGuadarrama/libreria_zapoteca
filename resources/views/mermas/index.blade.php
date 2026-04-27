@@ -27,9 +27,19 @@
     </div>
     @endif
 
-    <a href="{{ route('reportes.mermas') }}" class="btn btn-dark">
-        Reporte de Mermas
-    </a>
+    <button type="button"
+        class="btn btn-danger mb-3"
+        onclick="if(confirm('¿Generar reporte de mermas?')) window.location.href='{{ route('mermas.reporte.general') }}'">
+
+        <i class="fa-solid fa-file-pdf"></i> Reporte Mermas
+    </button>
+
+    @if(session('error'))
+    <script>
+        alert("{{ session('error') }}");
+    </script>
+    @endif
+
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead>
@@ -67,6 +77,14 @@
                             data-bs-toggle="modal" data-bs-target="#modalDeleteMerma{{ $merma->id }}"
                             title="Eliminar Merma">
                             <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                        </button>
+
+                        <button type="button"
+                            class="btn btn-link p-0 text-decoration-none fs-5"
+                            onclick="window.location.href='{{ route('mermas.pdf', $merma->id) }}'"
+                            title="Descargar PDF">
+
+                            <i class="fa-solid fa-file-pdf" style="color: #dc3545;"></i>
                         </button>
                     </td>
                 </tr>
@@ -269,6 +287,17 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function generarReporteGeneral() {
+
+            if (!confirm('¿Deseas generar el reporte general solo con mermas PROCESADAS?')) {
+                return;
+            }
+
+            window.location.href = "{{ route('mermas.reporte.general') }}";
+        }
+    </script>
 </div>
 @endforeach
 @endsection

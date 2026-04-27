@@ -28,10 +28,19 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <script>
+        alert("{{ session('error') }}");
+    </script>
+    @endif
 
-    <a href="{{ route('compras.reporte') }}" class="btn btn-primary">
-        Ver Reporte
-    </a>
+    <button type="button"
+        class="btn btn-danger mb-3"
+        onclick="if(confirm('¿Generar reporte de compras?')) window.location.href='{{ route('compras.reporte.general') }}'">
+
+        <i class="fa-solid fa-file-pdf"></i> Reporte Compras
+    </button>
+
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead class="table-light">
@@ -71,6 +80,14 @@
                             data-bs-toggle="modal" data-bs-target="#modalDeleteCompra{{ $compra->id }}"
                             data-bs-placement="top" title="Eliminar Compra">
                             <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                        </button>
+
+                        <button type="button"
+                            class="btn btn-link p-0 text-decoration-none fs-5"
+                            onclick="window.location.href='{{ route('compras.pdf', $compra->id) }}'"
+                            title="Descargar PDF">
+
+                            <i class="fa-solid fa-file-pdf" style="color: #dc3545;"></i>
                         </button>
                     </td>
                 </tr>

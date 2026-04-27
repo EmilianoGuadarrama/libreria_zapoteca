@@ -28,9 +28,12 @@
     </div>
     @endif
 
-    <a href="{{ route('lotes.reporte') }}" class="btn btn-primary">
-        Reporte de Lotes
-    </a>
+    <button type="button"
+        class="btn btn-danger mb-3"
+        onclick="if(confirm('¿Generar reporte de lotes?')) window.location.href='{{ route('lotes.reporte.general') }}'">
+
+        <i class="fa-solid fa-file-pdf"></i> Reporte Lotes
+    </button>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
@@ -71,6 +74,14 @@
                             data-bs-toggle="modal" data-bs-target="#modalDeleteLote{{ $lote->id }}"
                             data-bs-placement="top" title="Eliminar Lote">
                             <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                        </button>
+
+                        <button type="button"
+                            class="btn btn-link p-0 text-decoration-none fs-5"
+                            onclick="window.location.href='{{ route('lotes.pdf', $lote->id) }}'"
+                            title="Descargar PDF">
+
+                            <i class="fa-solid fa-file-pdf" style="color: #dc3545;"></i>
                         </button>
                     </td>
                 </tr>

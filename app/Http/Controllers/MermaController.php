@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Merma;
 
 
 class MermaController extends Controller
@@ -134,43 +135,64 @@ class MermaController extends Controller
         return redirect()->route('mermas.index')->with('status', 'Merma eliminada correctamente.');
     }
 
-
-    //Sección para los reportes]
-    public function reporte()
+    public function generarPDF($id)
     {
-        $datos = DB::select("
-        SELECT 
-            b.titulo as libro,
-            COUNT(m.id) as total_mermas,
-            SUM(m.cantidad) as cantidad_total
-        FROM MERMAS m
-        JOIN LOTES l ON m.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY b.titulo
-        ORDER BY b.titulo
-    ");
+        $merma = Merma::findOrFail($id);
 
-        return view('reportes.mermas', compact('datos'));
+        // Validación opcional (como ya usabas)
+        if ($merma->estatus !== 'PROCESADO') {
+            return redirect()->back()->with('error', 'Solo se pueden generar PDFs de mermas procesadas');
+        }
+
+        $columnas = ['ID', 'Lote', 'Tipo', 'Cantidad', 'Destino', 'Fecha'];
+
+        $datos = [
+            $merma->id,
+            $merma->lote,
+            $merma->tipo_merma,
+            $merma->cantidad,
+            $merma->destino,
+            $merma->fecha_reporte
+        ];
+
+        $pdf = Pdf::loadView('pdf.individual', [
+            'titulo' => 'Reporte de Merma',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('reporte_merma_' . $merma->id . '.pdf');
     }
 
-    public function reportePDF()
+    public function reporteGeneral()
     {
-        $datos = DB::select("
-        SELECT 
-            b.titulo as libro,
-            COUNT(m.id) as total_mermas,
-            SUM(m.cantidad) as cantidad_total
-        FROM MERMAS m
-        JOIN LOTES l ON m.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY b.titulo
-        ORDER BY b.titulo
-    ");
+        $mermas = Merma::where('estatus', 'PROCESADO')->get();
 
-        $pdf = Pdf::loadView('reportes.mermas_pdf', compact('datos'));
+        if ($mermas->isEmpty()) {
+            return redirect()->back()->with('error', 'No hay mermas procesadas');
+        }
 
-        return $pdf->download('reporte_mermas.pdf');
+        $columnas = ['ID', 'Lote', 'Tipo', 'Cantidad', 'Destino', 'Fecha'];
+
+        $datos = [];
+
+        foreach ($mermas as $merma) {
+            $datos[] = [
+                $merma->id,
+                $merma->lote,
+                $merma->tipo_merma,
+                $merma->cantidad,
+                $merma->destino,
+                $merma->fecha_reporte
+            ];
+        }
+
+        $pdf = Pdf::loadView('pdf.reporte_general', [
+            'titulo' => 'Reporte General de Mermas',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('reporte_general_mermas.pdf');
     }
 }

@@ -121,39 +121,55 @@ class LoteController extends Controller
         }
     }
 
-    public function reporte()
+    public function generarPDF($id)
     {
-        $lotes = DB::select("
-        SELECT 
-            l.id as lote,
-            b.titulo as libro,
-            l.cantidad,
-            l.fecha_entrada
-        FROM LOTES l
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        ORDER BY b.titulo
-    ");
+        $lote = Lote::findOrFail($id);
 
-        return view('reportes.lotes', compact('lotes'));
+        $columnas = ['ID', 'Nombre', 'Cantidad', 'Fecha'];
+
+        $datos = [
+            $lote->id,
+            $lote->nombre,
+            $lote->cantidad,
+            $lote->created_at
+        ];
+
+        $pdf = Pdf::loadView('pdf.individual', [
+            'titulo' => 'Reporte de Lote',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('reporte_lote_' . $lote->id . '.pdf');
     }
 
-    public function reportePDF()
+    public function reporteGeneral()
     {
-        $lotes = DB::select("
-        SELECT 
-            l.id as lote,
-            b.titulo as libro,
-            l.cantidad,
-            l.fecha_entrada
-        FROM LOTES l
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        ORDER BY b.titulo
-    ");
+        $lotes = Lote::all();
 
-        $pdf = Pdf::loadView('reportes.lotes_pdf', compact('lotes'));
+        if ($lotes->isEmpty()) {
+            return redirect()->back()->with('error', 'No hay lotes registrados');
+        }
 
-        return $pdf->download('reporte_lotes.pdf');
+        $columnas = ['ID', 'Nombre', 'Cantidad', 'Fecha'];
+
+        $datos = [];
+
+        foreach ($lotes as $lote) {
+            $datos[] = [
+                $lote->id,
+                $lote->nombre,
+                $lote->cantidad,
+                $lote->created_at
+            ];
+        }
+
+        $pdf = Pdf::loadView('pdf.reporte_general', [
+            'titulo' => 'Reporte General de Lotes',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('reporte_general_lotes.pdf');
     }
 }

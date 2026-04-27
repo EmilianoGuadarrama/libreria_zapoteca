@@ -130,42 +130,54 @@ class CompraController extends Controller
         }
     }
 
-    public function reporte()
+    public function generarPDF($id)
     {
-        $compras = DB::select("
-        SELECT 
-            c.id as compra,
-            b.titulo as libro,
-            SUM(l.cantidad) as total_cantidad,
-            c.created_at as fecha
-        FROM COMPRAS c
-        JOIN LOTES l ON l.compra_id = c.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY c.id, b.titulo, c.created_at
-        ORDER BY c.created_at DESC
-    ");
+        $compra = Compra::findOrFail($id);
 
-        return view('reportes.compras', compact('compras'));
+        $columnas = ['ID', 'Proveedor', 'Total', 'Fecha'];
+
+        $datos = [
+            $compra->id,
+            $compra->proveedor->nombre ?? 'N/A',
+            $compra->total,
+            $compra->created_at
+        ];
+
+        $pdf = Pdf::loadView('pdf.individual', [
+            'titulo' => 'Reporte de Compra',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('compra_' . $compra->id . '.pdf');
     }
 
-    public function reportePDF()
+    public function reporteGeneral()
     {
-        $compras = DB::select("
-        SELECT 
-            c.id as compra,
-            b.titulo as libro,
-            SUM(l.cantidad) as total_cantidad,
-            c.created_at as fecha
-        FROM COMPRAS c
-        JOIN LOTES l ON l.compra_id = c.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY c.id, b.titulo, c.created_at
-        ORDER BY c.created_at DESC
-    ");
+        $compras = Compra::all();
 
-        $pdf = Pdf::loadView('reportes.compras_pdf', compact('compras'));
+        if ($compras->isEmpty()) {
+            return redirect()->back()->with('error', 'No hay compras');
+        }
+
+        $columnas = ['ID', 'Proveedor', 'Total', 'Fecha'];
+
+        $datos = [];
+
+        foreach ($compras as $compra) {
+            $datos[] = [
+                $compra->id,
+                $compra->proveedor->nombre ?? 'N/A',
+                $compra->total_compra,
+                $compra->created_at
+            ];
+        }
+
+        $pdf = Pdf::loadView('pdf.reporte_general', [
+            'titulo' => 'Reporte General de Compras',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
 
         return $pdf->download('reporte_compras.pdf');
     }

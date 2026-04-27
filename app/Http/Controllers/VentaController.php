@@ -184,48 +184,4 @@ class VentaController extends Controller
 
         return response()->json($resultados);
     }
-
-    //Sección de reportes
-    public function reporte()
-    {
-        $datos = DB::select("
-        SELECT 
-            v.id as venta,
-            b.titulo as libro,
-            SUM(dv.cantidad) as total_vendidos,
-            SUM(dv.subtotal) as total_venta,
-            v.created_at as fecha
-        FROM VENTAS v
-        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
-        JOIN LOTES l ON dv.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY v.id, b.titulo, v.created_at
-        ORDER BY v.created_at DESC
-    ");
-
-        return view('reportes.ventas', compact('datos'));
-    }
-
-    public function reportePDF()
-    {
-        $datos = DB::select("
-        SELECT 
-            v.id as venta,
-            b.titulo as libro,
-            SUM(dv.cantidad) as total_vendidos,
-            SUM(dv.subtotal) as total_venta,
-            v.created_at as fecha
-        FROM VENTAS v
-        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
-        JOIN LOTES l ON dv.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY v.id, b.titulo, v.created_at
-        ORDER BY v.created_at DESC
-    ");
-
-        $pdf = Pdf::loadView('reportes.ventas_pdf', compact('datos'));
-        return $pdf->download('reporte_ventas.pdf');
-    }
 }
