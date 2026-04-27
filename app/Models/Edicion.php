@@ -25,7 +25,7 @@ class Edicion extends Model
         'portada',
         'alt_imagen',
         'existencias',
-        'stock_minimo'
+        'stock_minimo',
     ];
 
     public function libro()
@@ -33,8 +33,34 @@ class Edicion extends Model
         return $this->belongsTo(Libro::class, 'libro_id');
     }
 
+    public function editorial()
+    {
+        return $this->belongsTo(Editorial::class, 'editorial_id');
+    }
+
+    public function idioma()
+    {
+        return $this->belongsTo(Idioma::class, 'idioma_id');
+    }
+
+    public function formato()
+    {
+        return $this->belongsTo(Formato::class, 'formato_id');
+    }
+
     public function lotes()
     {
         return $this->hasMany(Lote::class, 'edicion_id');
+    }
+
+    public function promociones()
+    {
+        return $this->belongsToMany(Promocion::class, 'asigna_promociones', 'edicion_id', 'promocion_id')
+                    ->withTimestamps();
+    }
+
+    public function detallesCompras()
+    {
+        return $this->hasMany(DetalleCompra::class, 'edicion_id');
     }
 }

@@ -296,7 +296,7 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item"><a class="nav-link" href="#">Catálogo</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('catalogo') }}">Catálogo</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">Novedades</a></li>
 
                 @guest
@@ -366,7 +366,7 @@
                         Explora una colección curada de historias que trascienden el tiempo. Desde clásicos inmortales hasta las novedades más esperadas, encuentra tu próximo libro favorito.
                     </p>
 
-                    <a href="#" class="btn-zapoteca-main">
+                    <a href="{{ route('catalogo') }}" class="btn-zapoteca-main">
                         EXPLORAR CATÁLOGO <i class="fa-solid fa-arrow-right-long ms-2"></i>
                     </a>
                 </div>

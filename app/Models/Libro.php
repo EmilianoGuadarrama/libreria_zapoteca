@@ -17,7 +17,8 @@ class Libro extends Model
         'sinopsis',
         'clasificacion_id',
         'anio_publicacion_original',
-        'genero_principal_id'
+        'genero_principal_id',
+        'portada'
     ];
 
     public function clasificacion()
@@ -25,13 +26,23 @@ class Libro extends Model
         return $this->belongsTo(Clasificacion::class, 'clasificacion_id');
     }
 
+    public function genero()
+    {
+        return $this->belongsTo(Genero::class, 'genero_principal_id');
+    }
+
     public function ediciones()
     {
         return $this->hasMany(Edicion::class, 'libro_id');
     }
     public function autores()
-{
-    return $this->belongsToMany(Autor::class, 'asigna_autores', 'libro_id', 'autor_id')
-                ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(Autor::class, 'asigna_autores', 'libro_id', 'autor_id')
+                    ->withTimestamps();
+    }
+    public function subgeneros()
+    {
+        return $this->belongsToMany(Subgenero::class, 'asigna_subgenero', 'libro_id', 'subgenero_id')
+                    ->withTimestamps();
+    }
 }

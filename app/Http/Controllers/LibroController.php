@@ -3,23 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Libro;
+use App\Models\Autor;
+use App\Models\Subgenero;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class LibroController extends Controller
 {
     public function index()
     {
-        $libros = DB::table('libros')
-            ->leftJoin('clasificaciones', 'libros.clasificacion_id', '=', 'clasificaciones.id')
-            ->leftJoin('generos', 'libros.genero_principal_id', '=', 'generos.id')
-            ->select(
-                'libros.*',
-                'clasificaciones.nombre as nombre_clasificacion',
-                'generos.nombre as nombre_genero'
-            )
-            ->whereNull('libros.deleted_at')
-            ->orderBy('libros.titulo', 'asc')
+        $libros = Libro::with(['clasificacion', 'genero', 'autores.persona', 'subgeneros'])
+            ->orderBy('titulo', 'asc')
             ->get();
 
         $clasificacionesCatalogo = DB::table('clasificaciones')
@@ -34,7 +29,13 @@ class LibroController extends Controller
             ->orderBy('nombre', 'asc')
             ->get();
 
-        return view('libros.index', compact('libros', 'clasificacionesCatalogo', 'generosCatalogo'));
+        $autoresCatalogo = Autor::with('persona')->get()->sortBy(function($autor) {
+            return $autor->persona ? $autor->persona->nombre . ' ' . $autor->persona->apellido_paterno : '';
+        });
+
+        $subgenerosCatalogo = Subgenero::orderBy('nombre', 'asc')->get();
+
+        return view('libros.index', compact('libros', 'clasificacionesCatalogo', 'generosCatalogo', 'autoresCatalogo', 'subgenerosCatalogo'));
     }
 
     public function create()
@@ -50,6 +51,11 @@ class LibroController extends Controller
             'clasificacion_id' => 'required|integer|exists:clasificaciones,id',
             'anio_publicacion_original' => 'required|integer|min:1000|max:' . date('Y'),
             'genero_principal_id' => 'required|integer|exists:generos,id',
+            'portada' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'autores' => 'nullable|array',
+            'autores.*' => 'exists:autores,id',
+            'subgeneros' => 'nullable|array',
+            'subgeneros.*' => 'exists:subgeneros,id',
         ];
 
         $mensajes = [
@@ -64,19 +70,36 @@ class LibroController extends Controller
             'anio_publicacion_original.max' => 'El año de publicación no puede ser en el futuro.',
             'genero_principal_id.required' => 'Debes seleccionar un género principal.',
             'genero_principal_id.exists' => 'El género seleccionado no es válido.',
+            'portada.image' => 'El archivo debe ser una imagen.',
+            'portada.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, webp.',
+            'portada.max' => 'La imagen no debe pesar más de 4MB.',
+            'autores.*.exists' => 'El autor seleccionado no es válido.',
+            'subgeneros.*.exists' => 'El subgénero seleccionado no es válido.',
         ];
 
         $request->validate($reglas, $mensajes);
 
-        DB::table('libros')->insert([
+        $portadaPath = null;
+        if ($request->hasFile('portada')) {
+            $portadaPath = $request->file('portada')->store('libros_portadas', 'public');
+        }
+
+        $libro = Libro::create([
             'titulo' => trim($request->titulo),
             'sinopsis' => trim($request->sinopsis),
             'clasificacion_id' => $request->clasificacion_id,
             'anio_publicacion_original' => $request->anio_publicacion_original,
             'genero_principal_id' => $request->genero_principal_id,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'portada' => $portadaPath,
         ]);
+
+        if ($request->has('autores')) {
+            $libro->autores()->sync($request->autores);
+        }
+        
+        if ($request->has('subgeneros')) {
+            $libro->subgeneros()->sync($request->subgeneros);
+        }
 
         return redirect()->route('libros.index')->with('status', 'Libro registrado correctamente.');
     }
@@ -99,6 +122,11 @@ class LibroController extends Controller
             'clasificacion_id' => 'required|integer|exists:clasificaciones,id',
             'anio_publicacion_original' => 'required|integer|min:1000|max:' . date('Y'),
             'genero_principal_id' => 'required|integer|exists:generos,id',
+            'portada' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'autores' => 'nullable|array',
+            'autores.*' => 'exists:autores,id',
+            'subgeneros' => 'nullable|array',
+            'subgeneros.*' => 'exists:subgeneros,id',
         ];
 
         $mensajes = [
@@ -113,20 +141,45 @@ class LibroController extends Controller
             'anio_publicacion_original.max' => 'El año de publicación no puede ser en el futuro.',
             'genero_principal_id.required' => 'Debes seleccionar un género principal.',
             'genero_principal_id.exists' => 'El género seleccionado no es válido.',
+            'portada.image' => 'El archivo debe ser una imagen.',
+            'portada.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, webp.',
+            'portada.max' => 'La imagen no debe pesar más de 4MB.',
+            'autores.*.exists' => 'El autor seleccionado no es válido.',
+            'subgeneros.*.exists' => 'El subgénero seleccionado no es válido.',
         ];
 
         $request->validate($reglas, $mensajes);
 
-        DB::table('libros')
-            ->where('id', $id)
-            ->update([
-                'titulo' => trim($request->titulo),
-                'sinopsis' => trim($request->sinopsis),
-                'clasificacion_id' => $request->clasificacion_id,
-                'anio_publicacion_original' => $request->anio_publicacion_original,
-                'genero_principal_id' => $request->genero_principal_id,
-                'updated_at' => now(),
-            ]);
+        $libro = Libro::findOrFail($id);
+        
+        $portadaPath = $libro->portada;
+        if ($request->hasFile('portada')) {
+            if ($portadaPath && Storage::disk('public')->exists($portadaPath)) {
+                Storage::disk('public')->delete($portadaPath);
+            }
+            $portadaPath = $request->file('portada')->store('libros_portadas', 'public');
+        }
+
+        $libro->update([
+            'titulo' => trim($request->titulo),
+            'sinopsis' => trim($request->sinopsis),
+            'clasificacion_id' => $request->clasificacion_id,
+            'anio_publicacion_original' => $request->anio_publicacion_original,
+            'genero_principal_id' => $request->genero_principal_id,
+            'portada' => $portadaPath,
+        ]);
+
+        if ($request->has('autores')) {
+            $libro->autores()->sync($request->autores);
+        } else {
+            $libro->autores()->detach();
+        }
+
+        if ($request->has('subgeneros')) {
+            $libro->subgeneros()->sync($request->subgeneros);
+        } else {
+            $libro->subgeneros()->detach();
+        }
 
         return redirect()->route('libros.index')->with('status', 'Libro actualizado correctamente.');
     }
