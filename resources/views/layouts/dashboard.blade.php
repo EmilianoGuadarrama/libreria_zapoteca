@@ -347,25 +347,27 @@
             <span class="bebas">INICIO</span>
         </a>
 
-        <div class="nav-title">Gestión de usuarios</div>
+      @if(auth()->user()->rol && auth()->user()->rol->nombre === 'Administrador')
+    <div class="nav-title">Gestión de usuarios</div>
 
-        <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
-            <button type="button"
-                    class="menu-toggle {{ $menuPersonas ? 'active' : '' }}"
-                    data-menu-toggle>
-                <i class="fa-solid fa-users"></i>
-                <span class="bebas">USUARIOS</span>
-                <i class="fa-solid fa-chevron-down chevron"></i>
-            </button>
+    <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
+        <button type="button"
+                class="menu-toggle {{ $menuPersonas ? 'active' : '' }}"
+                data-menu-toggle>
+            <i class="fa-solid fa-users"></i>
+            <span class="bebas">USUARIOS</span>
+            <i class="fa-solid fa-chevron-down chevron"></i>
+        </button>
 
-            <div class="submenu">
-                <a href="{{ Route::has('admin.pendientes') ? route('admin.pendientes') : '#' }}"
-                   class="{{ request()->routeIs('admin.pendientes') ? 'active' : '' }}">
-                    <i class="fa-solid fa-user-check"></i>
-                    <span>Validar usuarios</span>
-                </a>
-            </div>
+        <div class="submenu">
+            <a href="{{ Route::has('admin.pendientes') ? route('admin.pendientes') : '#' }}"
+               class="{{ request()->routeIs('admin.pendientes') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Validar usuarios</span>
+            </a>
         </div>
+    </div>
+@endif
 
         <div class="nav-title">Catálogo literario</div>
 
