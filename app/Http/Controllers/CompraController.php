@@ -151,34 +151,4 @@ class CompraController extends Controller
 
         return $pdf->download('compra_' . $compra->id . '.pdf');
     }
-
-    public function reporteGeneral()
-    {
-        $compras = Compra::all();
-
-        if ($compras->isEmpty()) {
-            return redirect()->back()->with('error', 'No hay compras');
-        }
-
-        $columnas = ['ID', 'Proveedor', 'Total', 'Fecha'];
-
-        $datos = [];
-
-        foreach ($compras as $compra) {
-            $datos[] = [
-                $compra->id,
-                $compra->proveedor->nombre ?? 'N/A',
-                $compra->total_compra,
-                $compra->created_at
-            ];
-        }
-
-        $pdf = Pdf::loadView('pdf.reporte_general', [
-            'titulo' => 'Reporte General de Compras',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
-
-        return $pdf->download('reporte_compras.pdf');
-    }
 }

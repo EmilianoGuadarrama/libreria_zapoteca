@@ -139,8 +139,6 @@ class LoteController extends Controller
             'columnas' => $columnas,
             'datos' => $datos
         ]);
-
-        return $pdf->download('reporte_lote_' . $lote->id . '.pdf');
     }
 
     public function reporteGeneral()

@@ -28,11 +28,6 @@
     </div>
     @endif
 
-    @if(session('error'))
-    <script>
-        alert("{{ session('error') }}");
-    </script>
-    @endif
 
     <button type="button"
         class="btn btn-danger mb-3"

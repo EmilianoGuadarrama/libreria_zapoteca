@@ -45,7 +45,6 @@ Route::middleware(['web'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-
 // =========================
 // RUTAS PROTEGIDAS
 // =========================
@@ -54,6 +53,25 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // =========================
+    // REPORTES
+    // =========================
+
+    // COMPRAS
+    Route::resource('compras', CompraController::class);
+    Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
+    Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])->name('compras.reporte.general');
+
+    /* MERMAS */
+    Route::resource('mermas', MermaController::class);
+    Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])->name('mermas.pdf');
+    Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])->name('mermas.reporte.general');
+
+    /* LOTES */
+    Route::resource('lotes', LoteController::class);
+    Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])->name('lotes.pdf');
+    Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])->name('lotes.reporte.general');
 
     // =========================
     // VENTAS
@@ -148,10 +166,6 @@ Route::middleware(['auth'])->group(function () {
         // MERMAS
         // =========================
         Route::resource('mermas', MermaController::class);
-        Route::resource('generos', GeneroController::class)->except(['index']);
-        Route::resource('subgeneros', SubgeneroController::class)->except(['index']);
-        Route::resource('ubicaciones', UbicacionController::class)->except(['index']);
-        Route::resource('asigna_subgeneros', AsignaSubgeneroController::class)->except(['index']);
     });
 
     // =========================
@@ -170,14 +184,4 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['rol:Administrador'])->group(function () {
         Route::resource('compras', CompraController::class);
     });
-
-    // PDFs individuales
-    Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])->name('mermas.pdf');
-    Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
-    Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])->name('lotes.pdf');
-
-    // Reportes generales
-    Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])->name('mermas.reporte.general');
-    Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])->name('compras.reporte.general');
-    Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])->name('lotes.reporte.general');
 });

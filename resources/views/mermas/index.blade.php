@@ -33,13 +33,6 @@
 
         <i class="fa-solid fa-file-pdf"></i> Reporte Mermas
     </button>
-
-    @if(session('error'))
-    <script>
-        alert("{{ session('error') }}");
-    </script>
-    @endif
-
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead>
@@ -287,17 +280,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        function generarReporteGeneral() {
-
-            if (!confirm('¿Deseas generar el reporte general solo con mermas PROCESADAS?')) {
-                return;
-            }
-
-            window.location.href = "{{ route('mermas.reporte.general') }}";
-        }
-    </script>
 </div>
 @endforeach
 @endsection

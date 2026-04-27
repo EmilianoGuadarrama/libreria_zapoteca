@@ -135,6 +135,7 @@ class MermaController extends Controller
         return redirect()->route('mermas.index')->with('status', 'Merma eliminada correctamente.');
     }
 
+
     public function generarPDF($id)
     {
         $merma = Merma::findOrFail($id);
