@@ -27,10 +27,9 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\EditorialController;
 use App\Http\Controllers\FormatoController;
 use App\Http\Controllers\IdiomaController;
+use App\Http\Controllers\UserController;
 
-// =========================
 // RUTAS PÚBLICAS
-// =========================
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
@@ -40,148 +39,76 @@ Route::get('/catalogo', [CatalogoController::class, 'index'])->name('catalogo');
 Route::middleware(['web'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// =========================
-// RUTAS PROTEGIDAS
-// =========================
+
+// RUTAS PROTEGIDAS (Requieren Login)
+
 Route::middleware(['auth'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // =========================
-    // REPORTES
-    // =========================
+    // ROL: VENDEDOR, GERENTE Y ADMINISTRADOR
+    // Acceso a la operación diaria de ventas
+    Route::middleware(['rol:Administrador,Vendedor'])->group(function () {
+        Route::get('/ventas/buscar-libro', [VentaController::class, 'buscarLibro'])->name('ventas.buscar_libro');
+        Route::get('/ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
+        Route::resource('ventas', VentaController::class);
+    });
 
-    // COMPRAS
-    Route::resource('compras', CompraController::class);
-    Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
-    Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])->name('compras.reporte.general');
+    // ROL: GERENTE Y ADMINISTRADOR
+    // Gestión de Inventario, Personal y Catálogos
+    Route::middleware(['rol:Administrador,Gerente'])->group(function () {
+        
+        // Gestión de Personal (UserController)
+        Route::resource('personal', UserController::class)->names('usuarios');
+        // Catálogo Literario (Libros, Autores, Géneros)
+        Route::resource('libros', LibroController::class);
+        Route::resource('ediciones', EdicionController::class);
+        Route::resource('autores', AutorController::class);
+        Route::resource('paises', PaisController::class);
+        Route::resource('nacionalidades', NacionalidadController::class);
+        Route::resource('asigna_autor', AsignaAutorController::class);
+        
+        // Categorización
+        Route::resource('clasificaciones', ClasificacionController::class);
+        Route::resource('generos', GeneroController::class);
+        Route::resource('subgeneros', SubgeneroController::class);
+        Route::resource('asigna_subgeneros', AsignaSubgeneroController::class);
+        
+        // Promociones
+        Route::post('promociones/{id}/renovar', [PromocionController::class, 'renovar'])->name('promociones.renovar');
+        Route::resource('promociones', PromocionController::class);
+        Route::resource('asigna_promociones', AsignaPromocionController::class);
 
-    /* MERMAS */
-    Route::resource('mermas', MermaController::class);
-    Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])->name('mermas.pdf');
-    Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])->name('mermas.reporte.general');
+        // Operaciones de Almacén y Compras
+        Route::resource('compras', CompraController::class);
+        Route::resource('mermas', MermaController::class);
+        Route::resource('lotes', LoteController::class);
+        Route::resource('proveedores', ProveedorController::class);
+        Route::resource('ubicaciones', UbicacionController::class);
 
-    /* LOTES */
-    Route::resource('lotes', LoteController::class);
-    Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])->name('lotes.pdf');
-    Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])->name('lotes.reporte.general');
+        // Catálogos Base
+        Route::resource('editoriales', EditorialController::class);
+        Route::resource('formatos', FormatoController::class);
+        Route::resource('idiomas', IdiomaController::class);
 
-    // =========================
-    // VENTAS
-    // =========================
-    Route::get('/ventas/buscar-libro', [VentaController::class, 'buscarLibro'])->name('ventas.buscar_libro');
-    Route::get('/ventas/{id}/ticket', [TicketVentaController::class, 'show'])->name('ventas.ticket');
-    Route::resource('ventas', VentaController::class);
+        // PDFs y Reportes
+        Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
+        Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])->name('mermas.pdf');
+        Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])->name('lotes.pdf');
+    });
 
-    // =========================
-    // ADMIN
-    // =========================
-    Route::middleware(['rol:Administrador'])->group(function () {
+   
+    // Acciones de seguridad y validación de nuevos usuarios
+   
+    Route::middleware(['rol:Administrador,Gerente'])->group(function () {
         Route::get('/admin/usuarios-pendientes', [AdminController::class, 'indexPendientes'])->name('admin.pendientes');
         Route::patch('/admin/usuarios/{id}/activar', [AdminController::class, 'activarUsuario'])->name('admin.activar');
         Route::delete('/admin/rechazar/{id}', [AdminController::class, 'rechazar'])->name('admin.rechazar');
     });
 
-    // =========================
-    // LECTURA DE CATÁLOGO
-    // Administrador, Gerente y Bibliotecario pueden ver
-    // =========================
-    Route::middleware(['rol:Administrador,Gerente,Bibliotecario'])->group(function () {
-        Route::get('/libros', [LibroController::class, 'index'])->name('libros.index');
-        Route::get('/clasificaciones', [ClasificacionController::class, 'index'])->name('clasificaciones.index');
-        Route::get('/generos', [GeneroController::class, 'index'])->name('generos.index');
-        Route::get('/subgeneros', [SubgeneroController::class, 'index'])->name('subgeneros.index');
-        Route::get('/ubicaciones', [UbicacionController::class, 'index'])->name('ubicaciones.index');
-        Route::get('/asigna_subgeneros', [AsignaSubgeneroController::class, 'index'])->name('asigna_subgeneros.index');
-
-        // EDICIONES - SOLO LISTADO
-        Route::get('/ediciones', [EdicionController::class, 'index'])->name('ediciones.index');
-
-        // CATÁLOGOS BASE - SOLO LISTADO
-        Route::get('/editoriales', [EditorialController::class, 'index'])->name('editoriales.index');
-        Route::get('/formatos', [FormatoController::class, 'index'])->name('formatos.index');
-        Route::get('/idiomas', [IdiomaController::class, 'index'])->name('idiomas.index');
-    });
-
-    // =========================
-    // ADMIN / GERENTE
-    // Administrador y Gerente pueden crear, editar y eliminar
-    // =========================
-    Route::middleware(['rol:Administrador,Gerente'])->group(function () {
-
-        // =========================
-        // EDICIONES
-        // =========================
-        Route::post('/ediciones', [EdicionController::class, 'store'])->name('ediciones.store');
-        Route::put('/ediciones/{edicion}', [EdicionController::class, 'update'])->name('ediciones.update');
-        Route::delete('/ediciones/{edicion}', [EdicionController::class, 'destroy'])->name('ediciones.destroy');
-
-        // =========================
-        // LIBROS
-        // =========================
-        Route::resource('libros', LibroController::class)->except(['index']);
-
-        // =========================
-        // PROMOCIONES
-        // =========================
-        Route::post('promociones/{id}/renovar', [PromocionController::class, 'renovar'])->name('promociones.renovar');
-        Route::resource('promociones', PromocionController::class);
-
-        Route::post('asigna_promociones/ediciones/{edicion}/portada', [AsignaPromocionController::class, 'updatePortada'])
-            ->name('asigna_promociones.portada.update');
-
-        Route::resource('asigna_promociones', AsignaPromocionController::class);
-
-        // =========================
-        // CATÁLOGOS BASE
-        // =========================
-        Route::resource('clasificaciones', ClasificacionController::class)->except(['index']);
-        Route::resource('generos', GeneroController::class)->except(['index']);
-        Route::resource('subgeneros', SubgeneroController::class)->except(['index']);
-        Route::resource('ubicaciones', UbicacionController::class)->except(['index']);
-        Route::resource('asigna_subgeneros', AsignaSubgeneroController::class)->except(['index']);
-
-        // EDITORIALES / FORMATOS / IDIOMAS
-        Route::resource('editoriales', EditorialController::class)->except(['index']);
-        Route::resource('formatos', FormatoController::class)->except(['index']);
-        Route::resource('idiomas', IdiomaController::class)->except(['index']);
-
-        // =========================
-        // PROVEEDORES / AUTORES
-        // =========================
-        Route::resource('proveedores', ProveedorController::class);
-        Route::resource('paises', PaisController::class);
-        Route::resource('nacionalidades', NacionalidadController::class);
-        Route::resource('autores', AutorController::class);
-        Route::resource('asigna_autor', AsignaAutorController::class);
-
-        // =========================
-        // MERMAS
-        // =========================
-        Route::resource('mermas', MermaController::class);
-    });
-
-    // =========================
-    // LOTES
-    // =========================
-    Route::middleware(['rol:Administrador'])->group(function () {
-        Route::get('/admin/lotes', [LoteController::class, 'index'])->name('lotes.index');
-        Route::post('/admin/lotes', [LoteController::class, 'store'])->name('lotes.store');
-        Route::put('/admin/lotes/{id}', [LoteController::class, 'update'])->name('lotes.update');
-        Route::delete('/admin/lotes/{id}', [LoteController::class, 'destroy'])->name('lotes.destroy');
-    });
-
-    // =========================
-    // COMPRAS
-    // =========================
-    Route::middleware(['rol:Administrador'])->group(function () {
-        Route::resource('compras', CompraController::class);
-    });
 });

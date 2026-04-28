@@ -305,9 +305,7 @@
                             <i class="fa-solid fa-user me-2"></i> INICIAR SESIÓN
                         </a>
                     </li>
-                    <li class="nav-item ms-lg-2">
-                        <a href="{{ route('register') }}" class="btn-nav btn-signup-nav">CREAR CUENTA</a>
-                    </li>
+                    
                 @endguest
 
                 @auth

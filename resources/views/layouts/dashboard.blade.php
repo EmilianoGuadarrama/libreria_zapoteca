@@ -35,6 +35,8 @@
 
     $menuInventario = request()->routeIs('ubicaciones.*')
         || request()->routeIs('mermas.*');
+    $user = auth()->user();
+    $rol = $user->rol->nombre ?? '';
 @endphp
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -346,29 +348,23 @@
             <i class="fa-solid fa-house"></i>
             <span class="bebas">INICIO</span>
         </a>
-
-      @if(auth()->user()->rol && auth()->user()->rol->nombre === 'Administrador')
-    <div class="nav-title">Gestión de usuarios</div>
-
-    <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
-        <button type="button"
-                class="menu-toggle {{ $menuPersonas ? 'active' : '' }}"
-                data-menu-toggle>
-            <i class="fa-solid fa-users"></i>
-            <span class="bebas">USUARIOS</span>
-            <i class="fa-solid fa-chevron-down chevron"></i>
-        </button>
-
-        <div class="submenu">
-            <a href="{{ Route::has('admin.pendientes') ? route('admin.pendientes') : '#' }}"
-               class="{{ request()->routeIs('admin.pendientes') ? 'active' : '' }}">
-                <i class="fa-solid fa-user-check"></i>
-                <span>Validar usuarios</span>
-            </a>
-        </div>
-    </div>
-@endif
-
+        
+        @if($rol === 'Administrador')
+            <div class="nav-title">Gestión de Personal</div>
+            <div class="nav-block {{ $menuPersonas ? 'open' : '' }}">
+                <button type="button" class="menu-toggle {{ $menuPersonas ? 'active' : '' }}" data-menu-toggle>
+                    <i class="fa-solid fa-users"></i>
+                    <span class="bebas">Personal</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+                <div class="submenu">
+                    <a href="{{ route('usuarios.index') }}">
+                        <i class="fa-solid fa-address-book"></i> <span> Personal</span>
+                    </a>
+                </div>
+            </div>
+        @endif
+ @if($rol === 'Administrador' || $rol === 'Gerente')
         <div class="nav-title">Catálogo literario</div>
 
         <div class="nav-block {{ $menuLibros ? 'open' : '' }}">
@@ -508,9 +504,9 @@
                 </a>
             </div>
         </div>
-
+@endif
         <div class="nav-title">Operaciones</div>
-
+@if($rol === 'Administrador' || $rol === 'Vendedor')
         <div class="nav-block {{ $menuVentas ? 'open' : '' }}">
             <button type="button"
                     class="menu-toggle {{ $menuVentas ? 'active' : '' }}"
@@ -534,6 +530,8 @@
                 </a>
             </div>
         </div>
+@endif
+@if($rol === 'Administrador' || $rol === 'Gerente')
 
         <div class="nav-block {{ $menuCompras ? 'open' : '' }}">
             <button type="button"
@@ -564,7 +562,8 @@
                 </a>
             </div>
         </div>
-
+        @endif
+@if($rol === 'Administrador' || $rol === 'Gerente' || $rol =='Vendedor')
         <div class="nav-title">Inventario</div>
 
         <div class="nav-block {{ $menuInventario ? 'open' : '' }}">
@@ -590,7 +589,7 @@
                 </a>
             </div>
         </div>
-
+@endif
         <form action="{{ Route::has('logout') ? route('logout') : '#' }}" method="POST" class="logout" style="margin: 0;">
             @csrf
             <button type="submit">
@@ -603,7 +602,9 @@
 
     <section class="content">
         @yield('dashboard-content')
+        
     </section>
+    
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
