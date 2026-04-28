@@ -313,10 +313,10 @@
             <table class="cart-table" id="tabla_carrito">
                 <thead>
                     <tr>
-                        <th style="width: 15%;">ISBN</th>
-                        <th style="width: 35%;">Título</th>
+                        <th style="width: 8%;">Img</th> <th style="width: 15%;">ISBN</th>
+                        <th style="width: 32%;">Título</th>
                         <th style="width: 15%;">Precio</th>
-                        <th style="width: 15%;">Cant.</th>
+                        <th style="width: 10%;">Cant.</th>
                         <th style="width: 15%;">Subtotal</th>
                         <th style="width: 5%;"></th>
                     </tr>
@@ -422,7 +422,8 @@
                     titulo: libro.titulo,
                     precio_unitario: parseFloat(libro.precio_venta),
                     cantidad: 1,
-                    subtotal: parseFloat(libro.precio_venta)
+                    subtotal: parseFloat(libro.precio_venta),
+                    portada: libro.portada // NUEVO: Guardamos el dato de la portada
                 });
             }
             renderizarCarrito();
@@ -449,21 +450,26 @@
             totalGeneral = 0;
 
             if (carrito.length === 0) {
-                tbodyCarrito.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">El carrito está vacío. Busca un libro para empezar.</td></tr>`;
+                tbodyCarrito.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">El carrito está vacío. Busca un libro para empezar.</td></tr>`;
             }
 
             carrito.forEach(item => {
                 cantidadArticulos += item.cantidad;
                 totalGeneral += item.subtotal;
 
+                // NUEVO: Lógica para mostrar la imagen o el recuadro de "Sin img"
+                const imgHtml = item.portada 
+                    ? `<img src="/storage/${item.portada}" alt="${item.titulo}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">` 
+                    : `<div style="width: 40px; height: 60px; background: #f8f2fb; border: 1px dashed #cdb7dc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #999; margin: 0 auto;">Sin img</div>`;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><small>${item.isbn}</small></td>
+                    <td class="text-center">${imgHtml}</td> <td><small>${item.isbn}</small></td>
                     <td><strong>${item.titulo}</strong></td>
                     <td>$${item.precio_unitario.toFixed(2)}</td>
                     <td>
                         <input type="number" class="qty-input" value="${item.cantidad}" min="1" 
-                               onchange="actualizarCantidad(${item.edicion_id}, this.value)">
+                            onchange="actualizarCantidad(${item.edicion_id}, this.value)">
                     </td>
                     <td style="font-weight: bold;">$${item.subtotal.toFixed(2)}</td>
                     <td>
@@ -555,16 +561,24 @@
                         } else {
                             data.forEach(libro => {
                                 const div = document.createElement('div');
-                                div.className = 'search-item';
-                                div.innerHTML = `
-                                    <div>
-                                        <strong>${libro.titulo}</strong><br>
-                                        <small style="color: var(--text-muted);">ISBN: ${libro.isbn} | Disp: ${libro.existencias}</small>
-                                    </div>
-                                    <div style="font-weight: bold; color: var(--purple-700);">
-                                        $${parseFloat(libro.precio_venta).toFixed(2)}
-                                    </div>
-                                `;
+                                    div.className = 'search-item';
+
+                                    const imgHtmlSearch = libro.portada 
+                                        ? `<img src="/storage/${libro.portada}" style="width: 30px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 12px;">` 
+                                        : `<div style="width: 30px; height: 45px; background: #f8f2fb; border: 1px dashed #cdb7dc; border-radius: 4px; margin-right: 12px; display: flex; align-items:center; justify-content:center;"><i class="fa-solid fa-book" style="color:#cdb7dc; font-size: 0.8rem;"></i></div>`;
+
+                                    div.innerHTML = `
+                                        <div style="display: flex; align-items: center;">
+                                            ${imgHtmlSearch}
+                                            <div>
+                                                <strong>${libro.titulo}</strong><br>
+                                                <small style="color: var(--text-muted);">ISBN: ${libro.isbn} | Disp: ${libro.existencias}</small>
+                                            </div>
+                                        </div>
+                                        <div style="font-weight: bold; color: var(--purple-700);">
+                                            $${parseFloat(libro.precio_venta).toFixed(2)}
+                                        </div>
+                                    `;
                                 
                                 div.onclick = function() {
                                     const itemEnCarrito = carrito.find(i => i.edicion_id === libro.edicion_id);
