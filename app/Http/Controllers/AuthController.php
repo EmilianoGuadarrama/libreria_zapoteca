@@ -11,11 +11,15 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
+    // Muestra el formulario de login con estética Glassmorphism
+     
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
+    // Maneja la autenticación y redirecciona según el Rol
+     
     public function login(Request $request)
     {
         $request->validate([
@@ -30,16 +34,22 @@ class AuthController extends Controller
         $credenciales = [
             'correo'   => $request->correo,
             'password' => $request->contrasena,
-            'estado'   => 'Activo'
+            'estado'   => 'Activo' // Solo permitimos entrar a usuarios activos
         ];
 
         if (Auth::attempt($credenciales, $request->filled('remember'))) {
             $request->session()->regenerate();
             $user = Auth::user();
 
-            return redirect('/')->with('success', '¡Qué gusto verte de nuevo en Zapoteca!');
+            // Mensaje personalizado según el rol
+            $mensaje = ($user->rol_id == 3) 
+                ? '¡Qué gusto verte de nuevo! Listo para las ventas del día.' 
+                : '¡Bienvenido al panel de administración, ' . $user->persona->nombre . '!';
+
+            return redirect()->route('dashboard')->with('success', $mensaje);
         }
 
+        // Si no entró, revisamos si es porque está pendiente
         $usuarioExistente = User::where('correo', $request->correo)->first();
         if ($usuarioExistente && $usuarioExistente->estado === 'Pendiente') {
             return redirect()->route('login')
@@ -52,6 +62,8 @@ class AuthController extends Controller
             ->withInput($request->only('correo'));
     }
 
+    // Cierra la sesión de forma segura
+     
     public function logout(Request $request)
     {
         Auth::logout();
@@ -60,21 +72,25 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
+    // Muestra el formulario de registro
+     
     public function showRegisterForm()
     {
         return view('auth.register');
     }
 
+    // Registra una nueva persona y su usuario asociado
+     
     public function register(Request $request)
     {
         $request->validate([
             'nombre'           => 'required|string|max:200',
             'apellido_paterno' => 'required|string|max:200',
-            'apellido_materno' => 'required|string|max:200', // Validación agregada
+            'apellido_materno' => 'required|string|max:200',
             'genero'           => 'required|in:Hombre,Mujer,Otro',
             'correo'           => 'required|email|unique:usuarios,correo',
             'contrasena'       => 'required|string|min:6|confirmed',
-            'rol_id'           => 'required|in:1,2,3',
+            'rol_id'           => 'required|in:1,2,3', // 1:Admin, 2:Gerente, 3:Vendedor
         ], [
             'nombre.required'           => 'El nombre es obligatorio.',
             'apellido_paterno.required' => 'El apellido paterno es obligatorio.',
@@ -90,6 +106,7 @@ class AuthController extends Controller
 
         try {
             return DB::transaction(function () use ($request) {
+                // 1. Creamos los datos personales
                 $persona = Persona::create([
                     'nombre'           => $request->nombre,
                     'apellido_paterno' => $request->apellido_paterno,
@@ -97,8 +114,10 @@ class AuthController extends Controller
                     'genero'           => $request->genero,
                 ]);
 
+                // 2. Definimos estado: Solo el Vendedor (Rol 3) entra directo
                 $estadoInicial = ($request->rol_id == 3) ? 'Activo' : 'Pendiente';
 
+                // 3. Creamos el usuario vinculado
                 $usuario = User::create([
                     'persona_id' => $persona->id,
                     'correo'     => $request->correo,
@@ -109,19 +128,22 @@ class AuthController extends Controller
 
                 if ($usuario->estado === 'Activo') {
                     Auth::login($usuario);
-                    return redirect('/')->with('success', '¡Bienvenido a Zapoteca! Tu cuenta ha sido creada y activada.');
+                    return redirect()->route('admin.dashboard')
+                        ->with('success', '¡Bienvenida(o) a Zapoteca! Tu cuenta ha sido creada y activada.');
                 }
 
-                // Redirección al welcome (/) con el mensaje de espera para roles 1 y 2
-                return redirect('/')->with('info', 'Cuenta creada correctamente. Por favor, espera a que un administrador acepte tu cuenta.');
+                // Mensaje para Admin/Gerente que deben esperar aprobación
+                return redirect('/')->with('info', 'Registro exitoso. Por seguridad, un administrador debe activar tu cuenta de nivel superior.');
             });
         } catch (\Exception $e) {
             return redirect()->route('register')
-                ->withErrors(['correo' => 'Error al registrar: ' . $e->getMessage()])
+                ->withErrors(['correo' => 'Hubo un problema al crear tu cuenta: ' . $e->getMessage()])
                 ->withInput();
         }
     }
 
+    // Métodos de gestión para el Administrador
+    
     public function indexPendientes()
     {
         $pendientes = User::with(['persona', 'rol'])
@@ -135,6 +157,7 @@ class AuthController extends Controller
     {
         $usuario = User::findOrFail($id);
         $usuario->update(['estado' => 'Activo']);
-        return back()->with('success', '¡Usuario activado correctamente!');
+        
+        return back()->with('success', 'El usuario ' . $usuario->persona->nombre . ' ha sido activado.');
     }
 }
