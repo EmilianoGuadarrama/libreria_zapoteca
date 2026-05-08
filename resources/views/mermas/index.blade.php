@@ -33,6 +33,7 @@
 
         <i class="fa-solid fa-file-pdf"></i> Reporte Mermas
     </button>
+
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead>

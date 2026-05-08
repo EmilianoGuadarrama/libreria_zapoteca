@@ -54,10 +54,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // =========================
-    // REPORTES
-    // =========================
-
     // COMPRAS
     Route::resource('compras', CompraController::class);
     Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');

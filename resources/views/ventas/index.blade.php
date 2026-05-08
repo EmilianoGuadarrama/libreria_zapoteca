@@ -26,10 +26,6 @@
     </div>
     @endif
 
-    <a href="{{ route('ventas.reporte') }}" class="btn btn-primary">
-        Reporte de Ventas
-    </a>
-
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead>
