@@ -169,7 +169,7 @@
                     </div>
 
                     <div class="modal-body p-4 text-center">
-                        <p class="fs-5 mb-1">¿Estás seguro de eliminar el país <br><strong>"{{ $pais->nombre }}"</strong>?</p>
+                        <p class="fs-5 mb-1">¿Estás seguro de eliminar el país?><strong>"{{ $pais->nombre }}"</strong>?</p>
                         <p class="text-muted small mb-0 mt-2">No se puede recuperar una vez eliminado.</p>
                     </div>
 
