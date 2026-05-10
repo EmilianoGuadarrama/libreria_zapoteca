@@ -210,7 +210,9 @@
         <div class="row g-4">
             @foreach($ediciones as $edicion)
                 @php
-                    $portada = $edicion->edicion_portada ? asset('storage/' . $edicion->edicion_portada) : ($edicion->libro_portada ? asset('storage/' . $edicion->libro_portada) : null);
+                    // Usando EXCLUSIVAMENTE la portada de la edición
+                    $portada = $edicion->edicion_portada ? asset('img/' . $edicion->edicion_portada) : null;
+                    
                     $precio = floatval($edicion->precio_venta);
                     $descuento = floatval($edicion->promo_descuento ?? 0);
                     $precioFinal = $descuento > 0 ? $precio - ($precio * $descuento / 100) : $precio;
@@ -235,10 +237,26 @@
                         <div class="book-info">
                             <div class="book-title">{{ $edicion->titulo }}</div>
                             <div class="book-author"><i class="fa-solid fa-feather-pointed me-1"></i> {{ Str::limit($autores, 35) }}</div>
-                            <div class="book-genre">
-                                <span class="badge" style="background: var(--purple-100); color: var(--zapoteca-dark); border: 1px solid #dbb6ee;">{{ $edicion->genero_nombre ?? 'N/A' }}</span>
+                            
+                            <!-- AQUÍ ESTÁ EL CAMBIO VISUAL PARA DISTINGUIR LAS EDICIONES -->
+                            <div class="book-genre d-flex flex-wrap gap-1 mt-1">
+                                <span class="badge" style="background: var(--purple-100); color: var(--zapoteca-dark); border: 1px solid #dbb6ee;" title="Género">
+                                    {{ $edicion->genero_nombre ?? 'N/A' }}
+                                </span>
+                                
+                                <span class="badge" style="background: #f8f2fb; color: #4b1c71; border: 1px solid #cdb7dc;" title="Edición">
+                                    Ed. {{ $edicion->numero_edicion }}
+                                </span>
+                                
+                                @if(!empty($edicion->formato_nombre))
+                                    <span class="badge bg-white text-muted border" title="Formato">
+                                        {{ $edicion->formato_nombre }}
+                                    </span>
+                                @endif
                             </div>
-                            <div class="book-price-row">
+                            <!-- FIN DEL CAMBIO VISUAL -->
+
+                            <div class="book-price-row mt-3">
                                 <div>
                                     @if($descuento > 0)
                                         <span class="price-original">${{ number_format($precio, 2) }}</span><br>
@@ -309,7 +327,10 @@
                                             <div class="col-md-4"><div class="detail-info-card soft"><div class="small text-muted">Idioma</div><div class="fw-semibold">{{ $edicion->idioma_nombre ?? 'N/A' }}</div></div></div>
                                             <div class="col-md-4"><div class="detail-info-card soft"><div class="small text-muted">Formato</div><div class="fw-semibold">{{ $edicion->formato_nombre ?? 'N/A' }}</div></div></div>
                                             <div class="col-md-3"><div class="detail-info-card outline"><div class="small text-muted">ISBN</div><div class="fw-semibold" style="font-size: 0.85rem;">{{ $edicion->isbn }}</div></div></div>
-                                            <div class="col-md-3"><div class="detail-info-card outline"><div class="small text-muted">Edición</div><div class="fw-semibold">{{ $edicion->numero_edicion }}ª</div></div></div>
+                                            
+                                            <!-- TAMBIÉN SE CORRIGIÓ LO DE LA "ª" EN EL MODAL -->
+                                            <div class="col-md-3"><div class="detail-info-card outline"><div class="small text-muted">Edición</div><div class="fw-semibold">{{ $edicion->numero_edicion }}</div></div></div>
+                                            
                                             <div class="col-md-3"><div class="detail-info-card outline"><div class="small text-muted">Páginas</div><div class="fw-semibold">{{ $edicion->numero_paginas }}</div></div></div>
                                             <div class="col-md-3"><div class="detail-info-card outline"><div class="small text-muted">Existencias</div><div class="fw-semibold">{{ $edicion->existencias }} uds.</div></div></div>
                                         </div>

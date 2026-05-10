@@ -12,7 +12,7 @@ class CatalogoController extends Controller
     {
         $hoy = Carbon::now()->toDateString();
 
-        // Primero obtenemos ediciones con su promo activa (sin CLOB en GROUP BY)
+        // Obtenemos ediciones con su promo activa
         $query = DB::table('ediciones')
             ->join('libros', 'ediciones.libro_id', '=', 'libros.id')
             ->leftJoin('clasificaciones', 'libros.clasificacion_id', '=', 'clasificaciones.id')
@@ -41,13 +41,13 @@ class CatalogoController extends Controller
                 'ediciones.numero_paginas',
                 'ediciones.precio_venta',
                 'ediciones.existencias',
+                // AHORA SOLO PEDIMOS LA PORTADA DE LA EDICIÓN (Ignoramos libros.portada)
                 'ediciones.portada as edicion_portada',
                 'ediciones.alt_imagen',
                 'libros.id as libro_id',
                 'libros.titulo',
                 'libros.sinopsis',
                 'libros.anio_publicacion_original',
-                'libros.portada as libro_portada',
                 'libros.clasificacion_id',
                 'libros.genero_principal_id',
                 'clasificaciones.nombre as clasificacion_nombre',
