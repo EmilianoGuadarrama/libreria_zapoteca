@@ -14,6 +14,33 @@ class PromocionController extends Controller
     {
         $hoy = now()->startOfDay();
 
+        $promocionesActivasPorEdicion = DB::table('asigna_promociones as ap')
+            ->join('promociones as p', 'ap.promocion_id', '=', 'p.id')
+            ->select(
+                'ap.edicion_id',
+                DB::raw('MIN(p.id) as promo_id'),
+                DB::raw('MIN(p.nombre) as promo_nombre'),
+                DB::raw('MAX(p.porcentaje_descuento) as promo_descuento')
+            )
+            ->whereNull('ap.deleted_at')
+            ->whereNull('p.deleted_at')
+            ->whereDate('p.fecha_inicio', '<=', $hoy)
+            ->whereDate('p.fecha_final', '>=', $hoy)
+            ->groupBy('ap.edicion_id');
+
+        $asignacionesPorEdicion = DB::table('asigna_promociones')
+            ->select('edicion_id', 'promocion_id')
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy('edicion_id')
+            ->map(function ($rows) {
+                return $rows->pluck('promocion_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+            });
+
         $todasLasPromociones = DB::table('promociones as p')
             ->leftJoin('usuarios as u', 'p.autorizado_por_id', '=', 'u.id')
             ->leftJoin('personas as per', 'u.persona_id', '=', 'per.id')
@@ -90,15 +117,8 @@ class PromocionController extends Controller
             ->leftJoin('asigna_autores', 'libros.id', '=', 'asigna_autores.libro_id')
             ->leftJoin('autores', 'asigna_autores.autor_id', '=', 'autores.id')
             ->leftJoin('personas', 'autores.persona_id', '=', 'personas.id')
-            ->leftJoin('asigna_promociones as ap', function ($join) {
-                $join->on('ediciones.id', '=', 'ap.edicion_id')
-                    ->whereNull('ap.deleted_at');
-            })
-            ->leftJoin('promociones as p', function ($join) use ($hoy) {
-                $join->on('ap.promocion_id', '=', 'p.id')
-                    ->whereNull('p.deleted_at')
-                    ->whereDate('p.fecha_inicio', '<=', $hoy)
-                    ->whereDate('p.fecha_final', '>=', $hoy);
+            ->leftJoinSub($promocionesActivasPorEdicion, 'promo_activa', function ($join) {
+                $join->on('ediciones.id', '=', 'promo_activa.edicion_id');
             })
             ->select(
                 'ediciones.id',
@@ -107,12 +127,17 @@ class PromocionController extends Controller
                 'ediciones.portada',
                 'libros.titulo',
                 DB::raw("personas.nombre || ' ' || personas.apellido_paterno || ' ' || personas.apellido_materno as autor"),
-                'p.nombre as promo_nombre',
-                'p.porcentaje_descuento as promo_descuento'
+                'promo_activa.promo_id',
+                'promo_activa.promo_nombre',
+                'promo_activa.promo_descuento'
             )
             ->whereNull('ediciones.deleted_at')
             ->distinct()
-            ->get();
+            ->get()
+            ->map(function ($edicion) use ($asignacionesPorEdicion) {
+                $edicion->asignada_promocion_ids = $asignacionesPorEdicion->get($edicion->id, []);
+                return $edicion;
+            });
 
         $promociones = $todasLasPromociones
             ->filter(function ($promo) use ($hoy) {
@@ -129,7 +154,7 @@ class PromocionController extends Controller
             'nombre'               => 'required|string|max:200',
             'fecha_inicio'         => 'required|date',
             'fecha_final'          => 'required|date|after_or_equal:fecha_inicio',
-            'porcentaje_descuento' => 'required|numeric|min:0|max:100',
+            'porcentaje_descuento' => 'required|numeric|min:0|max:50',
         ]);
 
         try {
@@ -149,7 +174,7 @@ class PromocionController extends Controller
             'nombre'               => 'required|string|max:200',
             'fecha_inicio'         => 'required|date',
             'fecha_final'          => 'required|date|after_or_equal:fecha_inicio',
-            'porcentaje_descuento' => 'required|numeric|min:0|max:100',
+            'porcentaje_descuento' => 'required|numeric|min:0|max:50',
         ]);
 
         try {
