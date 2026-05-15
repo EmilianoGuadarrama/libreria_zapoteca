@@ -154,30 +154,40 @@ class CompraController extends Controller
 
     public function reporteGeneral()
     {
-        $compras = \App\Models\Compra::all();
+        $compras = Compra::with('proveedor')
+            ->get();
 
-        if ($compras->isEmpty()) {
-            return redirect()->back()->with('error', 'No hay compras registradas');
-        }
+        $columnas = [
+            'ID',
+            'Proveedor',
+            'Factura',
+            'Fecha',
+            'Estado',
+            'Total'
+        ];
 
-        $columnas = ['ID', 'Proveedor', 'Total', 'Fecha'];
-
-        $datos = [];
-
-        foreach ($compras as $compra) {
-            $datos[] = [
+        $datos = $compras->map(function ($compra) {
+            return [
                 $compra->id,
-                $compra->proveedor->nombre ?? 'N/A',
-                $compra->total_compra,
-                $compra->created_at
+                $compra->proveedor->nombre,
+                $compra->folio_factura,
+                $compra->fecha_compra,
+                $compra->estado,
+                '$' . number_format($compra->total_compra, 2)
             ];
-        }
+        });
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.reporte_general', [
-            'titulo' => 'Reporte General de Compras',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        $estadisticas = [
+            'Total compras' => $compras->count(),
+            'Monto total' => '$' . number_format($compras->sum('total_compra'), 2)
+        ];
+
+        $pdf = Pdf::loadView('pdf.reporte_general', compact(
+            'columnas',
+            'datos',
+            'titulo',
+            'estadisticas'
+        ));
 
         return $pdf->download('reporte_compras.pdf');
     }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Http;
 
 class VentaController extends Controller
 {
@@ -185,47 +186,191 @@ class VentaController extends Controller
         return response()->json($resultados);
     }
 
-    //Sección de reportes
-    public function reporte()
+    public function generarPDF($id)
     {
-        $datos = DB::select("
-        SELECT 
-            v.id as venta,
-            b.titulo as libro,
-            SUM(dv.cantidad) as total_vendidos,
-            SUM(dv.subtotal) as total_venta,
-            v.created_at as fecha
-        FROM VENTAS v
-        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
-        JOIN LOTES l ON dv.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY v.id, b.titulo, v.created_at
-        ORDER BY v.created_at DESC
-    ");
+        $venta = Venta::findOrFail($id);
 
-        return view('reportes.ventas', compact('datos'));
+        $columnas = [
+            'ID',
+            'Cliente',
+            'Total',
+            'Fecha'
+        ];
+
+        $datos = [
+            $venta->id,
+            $venta->cliente ?? 'N/A',
+            $venta->total,
+            $venta->created_at
+        ];
+
+        $pdf = Pdf::loadView('pdf.individual', [
+            'titulo' => 'Reporte de Venta',
+            'columnas' => $columnas,
+            'datos' => $datos
+        ]);
+
+        return $pdf->download('venta_' . $venta->id . '.pdf');
     }
 
-    public function reportePDF()
+    public function reporteGeneral(Request $request)
     {
-        $datos = DB::select("
-        SELECT 
-            v.id as venta,
-            b.titulo as libro,
-            SUM(dv.cantidad) as total_vendidos,
-            SUM(dv.subtotal) as total_venta,
-            v.created_at as fecha
-        FROM VENTAS v
-        JOIN DETALLES_VENTAS dv ON dv.venta_id = v.id
-        JOIN LOTES l ON dv.lote_id = l.id
-        JOIN EDICIONES e ON l.edicion_id = e.id
-        JOIN LIBROS b ON e.libro_id = b.id
-        GROUP BY v.id, b.titulo, v.created_at
-        ORDER BY v.created_at DESC
-    ");
+        $query = Venta::query();
 
-        $pdf = Pdf::loadView('reportes.ventas_pdf', compact('datos'));
-        return $pdf->download('reporte_ventas.pdf');
+        // FILTROS
+        if ($request->fecha) {
+            $query->whereDate('created_at', $request->fecha);
+        }
+
+        if ($request->mes) {
+            $query->whereMonth('created_at', $request->mes);
+        }
+
+        if ($request->anio) {
+            $query->whereYear('created_at', $request->anio);
+        }
+
+        // OBTENER VENTAS
+        $ventas = $query->orderBy('created_at', 'desc')->get();
+
+        // VALIDACIÓN
+        if ($ventas->isEmpty()) {
+
+            return redirect()->back()
+                ->with('error', 'No hay ventas registradas con esos filtros.');
+        }
+
+        // ESTADÍSTICAS
+        $totalVentas = $ventas->sum('total');
+
+        $cantidadVentas = $ventas->count();
+
+        $promedioVentas = $ventas->avg('total');
+
+        // COLUMNAS
+        $columnas = [
+            'ID',
+            'Cliente',
+            'Total',
+            'Fecha'
+        ];
+
+        // DATOS TABLA
+        $datos = [];
+
+        foreach ($ventas as $venta) {
+
+            $datos[] = [
+
+                $venta->id,
+
+                $venta->cliente ?? 'N/A',
+
+                '$' . number_format($venta->total, 2),
+
+                $venta->created_at->format('d/m/Y')
+            ];
+        }
+
+        // AGRUPAR VENTAS POR MES PARA GRÁFICA
+        $ventasPorMes = Venta::selectRaw("
+        EXTRACT(MONTH FROM created_at) as mes,
+        SUM(total) as total
+    ")
+            ->groupByRaw("EXTRACT(MONTH FROM created_at)")
+            ->orderByRaw("EXTRACT(MONTH FROM created_at)")
+            ->get();
+
+        $mesesTexto = [
+            1 => 'Enero',
+            2 => 'Febrero',
+            3 => 'Marzo',
+            4 => 'Abril',
+            5 => 'Mayo',
+            6 => 'Junio',
+            7 => 'Julio',
+            8 => 'Agosto',
+            9 => 'Septiembre',
+            10 => 'Octubre',
+            11 => 'Noviembre',
+            12 => 'Diciembre'
+        ];
+
+        $labels = [];
+        $valores = [];
+
+        foreach ($ventasPorMes as $item) {
+
+            $labels[] = $mesesTexto[$item->mes];
+
+            $valores[] = round($item->total, 2);
+        }
+
+        // URL DE QUICKCHART
+        $chartConfig = [
+
+            'type' => 'bar',
+
+            'data' => [
+
+                'labels' => $labels,
+
+                'datasets' => [[
+
+                    'label' => 'Ventas por Mes',
+
+                    'data' => $valores
+                ]]
+            ]
+        ];
+
+        $chartUrl = 'https://quickchart.io/chart?c=' .
+            urlencode(json_encode($chartConfig));
+
+        // DESCARGAR IMAGEN
+        $imageContent = file_get_contents($chartUrl);
+
+        // CONVERTIR A BASE64
+        $chartBase64 = 'data:image/png;base64,' .
+            base64_encode($imageContent);
+
+        // TÍTULO DINÁMICO
+        $titulo = 'Reporte General de Ventas';
+
+        if ($request->fecha) {
+
+            $titulo .= ' - Día ' .
+                date('d/m/Y', strtotime($request->fecha));
+        }
+
+        if ($request->mes) {
+
+            $titulo .= ' - Mes ' . $request->mes;
+        }
+
+        if ($request->anio) {
+
+            $titulo .= ' - Año ' . $request->anio;
+        }
+
+        // GENERAR PDF
+        $pdf = Pdf::loadView('pdf.reporte_general_ventas', [
+
+            'titulo' => $titulo,
+
+            'columnas' => $columnas,
+
+            'datos' => $datos,
+
+            'totalVentas' => $totalVentas,
+
+            'cantidadVentas' => $cantidadVentas,
+
+            'promedioVentas' => $promedioVentas,
+
+            'chartBase64' => $chartBase64
+        ]);
+
+        return $pdf->download('reporte_general_ventas.pdf');
     }
 }

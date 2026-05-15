@@ -1,6 +1,13 @@
 @extends('layouts.dashboard')
 
 @section('dashboard-content')
+
+@if(session('error'))
+<div class="alert alert-warning">
+    {{ session('error') }}
+</div>
+@endif
+
 <div class="container py-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -18,13 +25,103 @@
     </div>
     @endif
 
-    @if ($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
-        <i class="fa-solid fa-triangle-exclamation me-2"></i>
-        {{ $errors->first() }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    @if(session('error'))
+
+    <div class="alert alert-warning">
+
+        {{ session('error') }}
+
     </div>
+
     @endif
+
+    <div class="card mb-3">
+
+        <div class="card-body">
+
+            <form method="GET"
+                action="{{ route('ventas.reporte.general') }}">
+
+                <div class="row">
+
+                    {{-- FECHA --}}
+                    <div class="col-md-3">
+
+                        <label>Día</label>
+
+                        <input type="date"
+                            name="fecha"
+                            class="form-control">
+
+                    </div>
+
+                    {{-- MES --}}
+                    <div class="col-md-3">
+
+                        <label>Mes</label>
+
+                        <select name="mes"
+                            class="form-control">
+
+                            <option value="">Seleccione</option>
+
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+
+                        </select>
+
+                    </div>
+
+                    {{-- AÑO --}}
+                    <div class="col-md-3">
+
+                        <label>Año</label>
+
+                        <select name="anio"
+                            class="form-control">
+
+                            <option value="">Seleccione</option>
+
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+
+                        </select>
+
+                    </div>
+
+                    {{-- BOTÓN --}}
+                    <div class="col-md-3 d-flex align-items-end">
+
+                        <button type="submit"
+                            class="btn btn-danger w-100"
+                            onclick="return confirm('¿Generar reporte PDF?')">
+
+                            <i class="fa-solid fa-file-pdf"></i>
+
+                            Generar Reporte
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
@@ -67,6 +164,13 @@
 
                         <a href="{{ route('ventas.ticket', $venta->id) }}" class="btn btn-link p-0 text-decoration-none fs-5 me-3" title="Ver Ticket">
                             <i class="fa-solid fa-receipt" style="color: #4b1c71;"></i>
+                        </a>
+
+                        <a href="{{ route('ventas.pdf', $venta->id) }}"
+                            class="btn btn-danger btn-sm"
+                            title="Generar PDF">
+
+                            <i class="fa-solid fa-file-pdf"></i>
                         </a>
 
                         <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">

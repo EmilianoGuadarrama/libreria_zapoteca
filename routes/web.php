@@ -51,11 +51,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // COMPRAS
-    Route::resource('compras', CompraController::class);
-    Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
-    Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])->name('compras.reporte.general');
-
     // ROL: VENDEDOR, GERENTE Y ADMINISTRADOR
     // Acceso a la operación diaria de ventas
     Route::middleware(['rol:Administrador,Vendedor'])->group(function () {
@@ -70,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Gestión de Personal (UserController)
         Route::resource('personal', UserController::class)->names('usuarios');
+
         // Catálogo Literario (Libros, Autores, Géneros)
         Route::resource('libros', LibroController::class);
         Route::resource('ediciones', EdicionController::class);
@@ -89,7 +85,6 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('promociones', PromocionController::class);
         Route::resource('asigna_promociones', AsignaPromocionController::class);
 
-
         // Operaciones de Almacén y Compras
         Route::resource('compras', CompraController::class);
         Route::resource('mermas', MermaController::class);
@@ -102,10 +97,25 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('formatos', FormatoController::class);
         Route::resource('idiomas', IdiomaController::class);
 
-        // PDFs y Reportes
-        Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])->name('compras.pdf');
-        Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])->name('mermas.pdf');
-        Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])->name('lotes.pdf');
+        // PDFs Individuales
+        Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])
+            ->name('compras.pdf');
+        Route::get('/mermas/{id}/pdf', [MermaController::class, 'generarPDF'])
+            ->name('mermas.pdf');
+        Route::get('/lotes/{id}/pdf', [LoteController::class, 'generarPDF'])
+            ->name('lotes.pdf');
+        Route::get('/ventas/{id}/pdf', [VentaController::class, 'generarPDF'])
+            ->name('ventas.pdf');
+
+        // Reportes Generales
+        Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])
+            ->name('compras.reporte.general');
+        Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])
+            ->name('mermas.reporte.general');
+        Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])
+            ->name('lotes.reporte.general');
+        Route::get('/ventas/reporte/general', [VentaController::class, 'reporteGeneral'])
+            ->name('ventas.reporte.general');
     });
 
 
