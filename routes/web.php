@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
         // Promociones
         Route::post('promociones/{id}/renovar', [PromocionController::class, 'renovar'])->name('promociones.renovar');
         Route::resource('promociones', PromocionController::class);
+        Route::post('asigna_promociones/portada/{edicion}', [AsignaPromocionController::class, 'updatePortada'])->name('asigna_promociones.portada.update');
         Route::resource('asigna_promociones', AsignaPromocionController::class);
 
         // Operaciones de Almacén y Compras

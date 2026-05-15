@@ -169,13 +169,16 @@
                                 <option value="" disabled selected>-- Elige una promoción activa --</option>
                                 @foreach($promociones as $promo)
                                     @php
+                                        $fechaInicioPromo = isset($promo->fecha_inicio) ? \Carbon\Carbon::parse($promo->fecha_inicio)->startOfDay() : now()->startOfDay();
                                         $fechaFinPromo = isset($promo->fecha_final) ? \Carbon\Carbon::parse($promo->fecha_final)->startOfDay() : now()->startOfDay();
                                         $diasPromo = now()->startOfDay()->diffInDays($fechaFinPromo, false);
+                                        $promoEsProxima = now()->startOfDay()->lt($fechaInicioPromo);
                                     @endphp
                                     <option value="{{ $promo->id }}"
                                             data-descuento="{{ $promo->porcentaje_descuento }}"
                                             data-fin="{{ $fechaFinPromo->format('d/m/Y') }}"
-                                            data-dias="{{ $diasPromo }}">
+                                            data-dias="{{ $diasPromo }}"
+                                            data-estado="{{ $promoEsProxima ? 'proxima' : 'activa' }}">
                                         {{ $promo->nombre }}
                                     </option>
                                 @endforeach
@@ -192,7 +195,10 @@
                                             data-autor="{{ $edicion->autor ?? 'N/A' }}"
                                             data-portada="{{ $edicion->portada }}"
                                             data-promocion="{{ $edicion->promo_nombre }}"
-                                            data-descuento="{{ $edicion->promo_descuento }}">
+                                            data-descuento="{{ $edicion->promo_descuento }}"
+                                            data-promocion-id-actual="{{ $edicion->promo_id }}"
+                                            data-promocion-activa="{{ !empty($edicion->promo_nombre) ? '1' : '0' }}"
+                                            data-promocion-ids="{{ implode(',', $edicion->asignada_promocion_ids ?? []) }}">
                                         {{ $edicion->titulo }} | ISBN: {{ $edicion->isbn }}
                                     </option>
                                 @endforeach
@@ -413,7 +419,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Descuento (%)</label>
-                                <input type="number" name="porcentaje_descuento" class="form-control" min="0" max="100" required>
+                                <input type="number" name="porcentaje_descuento" class="form-control" min="0" max="50" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Fecha de Inicio</label>
@@ -603,7 +609,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Descuento (%)</label>
-                                    <input type="number" name="porcentaje_descuento" class="form-control" value="{{ $promocion->porcentaje_descuento }}" min="0" max="100" required>
+                                    <input type="number" name="porcentaje_descuento" class="form-control" value="{{ $promocion->porcentaje_descuento }}" min="0" max="50" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold" style="color: #4b1c71;">Fecha de Inicio</label>
@@ -678,6 +684,18 @@
         .selection-preview-item.active-conflict { border-color: #dbb6ee; box-shadow: 0 10px 24px rgba(127, 76, 165, 0.08); }
         .selection-preview-cover { width: 52px; height: 72px; object-fit: cover; border-radius: 10px; background: #f8f2fb; }
         .selection-preview-empty { border: 1px dashed #cfb3e2; border-radius: 12px; padding: 1rem; color: #7a6a88; background: rgba(255,255,255,0.75); }
+        .promo-status-wrap { min-width: 0; }
+        .promo-status-badge { display: inline-flex; align-items: center; justify-content: center; max-width: 100%; padding: 0.35rem 0.65rem; border-radius: 14px; background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee; font-size: 0.82rem; font-weight: 700; line-height: 1.2; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+        .ts-option-card { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.15rem 0; max-width: 100%; }
+        .ts-option-cover { width: 45px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .ts-option-body { min-width: 0; flex: 1; }
+        .ts-option-title { font-weight: 700; color: #2d1f3a; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+        .ts-option-meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; color: #7a6a88; margin-top: 0.15rem; flex-wrap: wrap; }
+        .ts-option-price { color: #198754; font-weight: 700; }
+        .ts-option-status { margin-top: 0.45rem; padding: 0.35rem 0.55rem; border-radius: 10px; background: #fff0ff; color: #4b1c71; border: 1px solid #dbb6ee; font-size: 0.78rem; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+        .ts-option-status.is-blocked { background: #fff7e8; border-color: #f2ddb2; color: #9a6700; }
+        .ts-option-status.is-disabled { background: #fff3f3; border-color: #f1c5c5; color: #b42318; }
+        .ts-option-badge { display: inline-flex; align-items: center; padding: 0.12rem 0.45rem; border-radius: 999px; background: #198754; color: #fff; font-size: 0.72rem; font-weight: 700; }
     </style>
 
     <script>
@@ -738,14 +756,83 @@
             const selectPromoElement = document.getElementById("select-promocion");
             let selectLibro = null;
 
+            function getSelectedPromoOption() {
+                if (!selectPromoElement || !selectPromoElement.value) return null;
+                return selectPromoElement.querySelector(`option[value="${selectPromoElement.value}"]`);
+            }
+
+            function getSelectedPromoId() {
+                return getSelectedPromoOption()?.value || "";
+            }
+
+            function isSelectedPromoUpcoming() {
+                return getSelectedPromoOption()?.dataset?.estado === "proxima";
+            }
+
             function getCurrentDiscount() {
-                if (!selectPromoElement || !selectPromoElement.value) return 0;
-                const option = selectPromoElement.options[selectPromoElement.selectedIndex];
+                const option = getSelectedPromoOption();
                 return Number(option?.dataset?.descuento || 0);
             }
 
             function formatMoney(value) {
                 return `$ ${Number(value || 0).toFixed(2)}`;
+            }
+
+            function getAssignedPromotionIds(option) {
+                return (option.dataset.promocionIds || "")
+                    .split(",")
+                    .map(value => value.trim())
+                    .filter(Boolean);
+            }
+
+            function getOptionBlockReason(option) {
+                const selectedPromoId = getSelectedPromoId();
+                const assignedIds = getAssignedPromotionIds(option);
+                const tienePromoActiva = option.dataset.promocionActiva === "1";
+
+                if (selectedPromoId && assignedIds.includes(selectedPromoId)) {
+                    return "same-promo";
+                }
+
+                if (isSelectedPromoUpcoming() && tienePromoActiva) {
+                    return "upcoming-blocked";
+                }
+
+                return "";
+            }
+
+            function updateSelectableBooks() {
+                if (!selectElement || !selectLibro) return;
+
+                const options = Array.from(selectElement.options);
+
+                options.forEach(function(option) {
+                    const blockReason = getOptionBlockReason(option);
+                    option.disabled = blockReason !== "";
+
+                    if (option.disabled && selectLibro.items.includes(option.value)) {
+                        selectLibro.removeItem(option.value, true);
+                    }
+                });
+
+                options
+                    .sort(function(a, b) {
+                        const aBlocked = a.disabled ? 1 : 0;
+                        const bBlocked = b.disabled ? 1 : 0;
+
+                        if (aBlocked !== bBlocked) {
+                            return aBlocked - bBlocked;
+                        }
+
+                        return 0;
+                    })
+                    .forEach(function(option) {
+                        selectElement.appendChild(option);
+                    });
+
+                selectLibro.clearCache();
+                selectLibro.refreshOptions(false);
+                selectLibro.refreshItems();
             }
 
             function renderSelectedBooksPreview() {
@@ -767,17 +854,18 @@
                     const option = selectElement.querySelector(`option[value="${id}"]`);
                     if (!option) return;
 
-                    const titulo = option.dataset.titulo || "Sin título";
+                    const titulo = option.dataset.titulo || "Sin titulo";
                     const isbn = option.dataset.isbn || "N/A";
                     const precio = Number(option.dataset.precio || 0);
                     const promoActual = option.dataset.promocion || "";
                     const promoDescuento = option.dataset.descuento || "";
+                    const promoActiva = option.dataset.promocionActiva === "1";
                     const portada = option.dataset.portada ? `/storage/${option.dataset.portada}` : "";
                     const precioNuevo = precio - (precio * (descuentoActual / 100));
-                    const conflictClass = promoActual ? "active-conflict" : "";
-                    const promoActualHtml = promoActual
-                        ? `<span class="badge rounded-pill" style="background-color: #fff0ff; color: #7f4ca5; border: 1px solid #dbb6ee;">${promoActual} ${promoDescuento ? `(-${promoDescuento}%)` : ''}</span>`
-                        : '<span class="text-muted small">Sin promoción activa</span>';
+                    const conflictClass = promoActiva ? "active-conflict" : "";
+                    const promoActualHtml = promoActiva
+                        ? `<span class="promo-status-badge">${promoActual}${promoDescuento ? ` (-${promoDescuento}%)` : ""}</span>`
+                        : '<span class="text-muted small">Sin promocion activa</span>';
 
                     const card = document.createElement("div");
                     card.className = `selection-preview-item ${conflictClass} p-3`;
@@ -795,7 +883,7 @@
                                         <div class="fw-bold" style="color: #4b1c71;">${titulo}</div>
                                         <div class="small text-muted mb-2">ISBN: ${isbn}</div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-link p-0 text-danger js-remove-selected-book" data-id="${id}" title="Quitar de la selección">
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-danger js-remove-selected-book" data-id="${id}" title="Quitar de la seleccion">
                                         <i class="fa-solid fa-circle-xmark fs-5"></i>
                                     </button>
                                 </div>
@@ -805,12 +893,12 @@
                                         <div class="fw-semibold">${formatMoney(precio)}</div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="small text-muted">Precio con promoción</div>
+                                        <div class="small text-muted">Precio con promocion</div>
                                         <div class="fw-bold text-success">${formatMoney(precioNuevo)}</div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="small text-muted">Promoción actual</div>
-                                        <div>${promoActualHtml}</div>
+                                        <div class="small text-muted">Promocion actual</div>
+                                        <div class="promo-status-wrap">${promoActualHtml}</div>
                                     </div>
                                 </div>
                             </div>
@@ -836,27 +924,35 @@
                     render: {
                         option: function(data, escape) {
                             let portada = data.$option.dataset.portada ? `/storage/${data.$option.dataset.portada}` : 'https://via.placeholder.com/50x70?text=No+Img';
-                            let promo = data.$option.dataset.promocion;
-                            let descuento = data.$option.dataset.descuento;
+                            let promo = data.$option.dataset.promocion || "";
+                            let descuento = data.$option.dataset.descuento || "";
+                            let blockReason = getOptionBlockReason(data.$option);
                             let promoHTML = '';
 
-                            if (promo) {
+                            if (blockReason === "same-promo") {
                                 promoHTML = `
-                                <div class="mt-1 p-1 rounded" style="background-color: #fff0ff; border: 1px dashed #dbb6ee;">
-                                    <div class="small fw-bold" style="color: #4b1c71;">
-                                        <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> Ya tiene promoción activa:
-                                    </div>
-                                    <div class="small text-muted">${escape(promo)} <span class="badge bg-success ms-1">-${descuento}%</span></div>
+                                <div class="ts-option-status is-disabled">
+                                    <i class="fa-solid fa-ban me-1"></i> Ya esta vinculado a esta promocion
+                                </div>`;
+                            } else if (blockReason === "upcoming-blocked") {
+                                promoHTML = `
+                                <div class="ts-option-status is-blocked">
+                                    <i class="fa-solid fa-clock me-1"></i> Tiene una promocion activa
+                                </div>`;
+                            } else if (promo) {
+                                promoHTML = `
+                                <div class="ts-option-status">
+                                    <i class="fa-solid fa-tag me-1"></i> ${escape(promo)} ${descuento ? `<span class="ts-option-badge">-${escape(descuento)}%</span>` : ''}
                                 </div>`;
                             }
                             return `
-                            <div class="d-flex align-items-start gap-3 p-2 border-bottom">
-                                <img src="${portada}" loading="lazy" style="width:45px; height:65px; object-fit:cover; border-radius:6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold text-dark">${escape(data.$option.dataset.titulo)}</div>
-                                    <div class="d-flex justify-content-between">
-                                        <div class="small text-muted">ISBN: ${escape(data.$option.dataset.isbn)}</div>
-                                        <div class="small text-success fw-bold">$ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}</div>
+                            <div class="ts-option-card">
+                                <img src="${portada}" loading="lazy" class="ts-option-cover">
+                                <div class="ts-option-body">
+                                    <div class="ts-option-title">${escape(data.$option.dataset.titulo)}</div>
+                                    <div class="ts-option-meta">
+                                        <span>ISBN: ${escape(data.$option.dataset.isbn || "N/A")}</span>
+                                        <span class="ts-option-price">$ ${parseFloat(data.$option.dataset.precio || 0).toFixed(2)}</span>
                                     </div>
                                     ${promoHTML}
                                 </div>
@@ -864,6 +960,13 @@
                         },
                         item: function(data, escape) {
                             return `<div class="fw-semibold">${escape(data.text)}</div>`;
+                        }
+                    },
+                    onItemAdd: function(value) {
+                        const option = selectElement.querySelector(`option[value="${value}"]`);
+                        if (option && getOptionBlockReason(option) !== "") {
+                            this.removeItem(value, true);
+                            this.refreshOptions(false);
                         }
                     },
                     onChange: function() {
@@ -874,10 +977,12 @@
 
             if (selectPromo) {
                 selectPromo.on("change", function() {
+                    updateSelectableBooks();
                     renderSelectedBooksPreview();
                 });
             }
 
+            updateSelectableBooks();
             renderSelectedBooksPreview();
 
             document.querySelectorAll('.btn-asignar-promo').forEach(btn => {
