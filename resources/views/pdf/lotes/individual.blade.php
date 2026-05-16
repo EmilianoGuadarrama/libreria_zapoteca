@@ -29,7 +29,7 @@
         </tr>
         <tr>
             <td class="info-label">Ubicación:</td>
-            <td>{{ $lote->ubicacion->nombre ?? 'N/A' }}</td>
+            <td>{{ $lote->ubicacion ? 'P:'.$lote->ubicacion->pasillo.' E:'.$lote->ubicacion->estante.' N:'.$lote->ubicacion->nivel : 'N/A' }}</td>
             <td class="info-label">Registrado por:</td>
             <td>{{ $registradoPor }}</td>
         </tr>
@@ -53,7 +53,7 @@
             <span class="stat-label">ISBN edición</span>
         </td>
         <td>
-            <span class="stat-value">{{ $lote->ubicacion->nombre ?? '—' }}</span>
+            <span class="stat-value">{{ $lote->ubicacion ? 'P:'.$lote->ubicacion->pasillo.' E:'.$lote->ubicacion->estante.' N:'.$lote->ubicacion->nivel : '—' }}</span>
             <span class="stat-label">Ubicación</span>
         </td>
         <td>
@@ -107,7 +107,7 @@
         </tr>
         <tr>
             <td class="text-left fw-bold">Ubicación en almacén</td>
-            <td>{{ $lote->ubicacion->nombre ?? 'N/A' }}</td>
+            <td>{{ $lote->ubicacion ? 'P:'.$lote->ubicacion->pasillo.' E:'.$lote->ubicacion->estante.' N:'.$lote->ubicacion->nivel : 'N/A' }}</td>
         </tr>
         <tr>
             <td class="text-left fw-bold">Registrado por</td>

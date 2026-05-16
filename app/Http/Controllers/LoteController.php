@@ -191,7 +191,9 @@ class LoteController extends Controller
                 'compra'    => $l->compra->folio_factura ?? 'N/A',
                 'proveedor' => $l->compra->proveedor->nombre ?? 'N/A',
                 'cantidad'  => $l->cantidad,
-                'ubicacion' => $l->ubicacion->nombre ?? 'N/A',
+                'ubicacion' => $l->ubicacion
+                    ? 'P:' . $l->ubicacion->pasillo . ' E:' . $l->ubicacion->estante . ' N:' . $l->ubicacion->nivel
+                    : 'N/A',
                 'usuario'   => $usuario,
                 'fecha'     => $l->fecha_entrada
                     ? \Carbon\Carbon::parse($l->fecha_entrada)->format('d/m/Y')
