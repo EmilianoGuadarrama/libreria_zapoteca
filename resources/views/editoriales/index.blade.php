@@ -1,10 +1,20 @@
 @extends('layouts.dashboard')
 
 @section('dashboard-content')
+    <!-- Librería para validar y dar formato al número de teléfono -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
+    
     <style>
         .zapoteca-error { color: #4b1c71; font-size: 0.85rem; font-weight: 600; margin-top: 5px; display: flex; align-items: center; }
         .form-control.is-invalid, .form-select.is-invalid { border-color: #7f4ca5 !important; box-shadow: 0 0 0 0.25rem rgba(127, 76, 165, 0.25) !important; }
         .bebas { font-family: 'Bebas Neue', sans-serif; }
+        
+        /* Estilo para que el input telefónico ocupe el 100% */
+        .iti { width: 100%; display: block; }
+        .iti__flag { background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags.png"); }
+        @media (min-resolution: 2x) {
+          .iti__flag { background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags@2x.png"); }
+        }
     </style>
 
     <div class="container py-4">
@@ -68,12 +78,14 @@
                     <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-building me-2"></i> Nueva Editorial</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('editoriales.store') }}" method="post" novalidate>
+                <!-- Añadido novalidate para usar las validaciones personalizadas de Bootstrap/HTML5 si se desea, pero dejaremos que el navegador trabaje -->
+                <form action="{{ route('editoriales.store') }}" method="post">
                     @csrf
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Nombre</label>
-                            <input type="text" name="nombre" class="form-control @if($errors->has('nombre') && !old('id_edit')) is-invalid @endif" placeholder="Ej. Fondo de Cultura Económica" value="{{ !old('id_edit') ? old('nombre') : '' }}" required maxlength="200">
+                            <!-- Validado: minlength="2" -->
+                            <input type="text" name="nombre" class="form-control @if($errors->has('nombre') && !old('id_edit')) is-invalid @endif" placeholder="Ej. Fondo de Cultura Económica" value="{{ !old('id_edit') ? old('nombre') : '' }}" required minlength="2" maxlength="200">
                             @if($errors->has('nombre') && !old('id_edit'))<div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('nombre') }}</div>@endif
                         </div>
                         <div class="mb-3">
@@ -86,12 +98,15 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Correo Electrónico</label>
-                            <input type="email" name="correo" class="form-control @if($errors->has('correo') && !old('id_edit')) is-invalid @endif" placeholder="Ej. contacto@editorial.com" value="{{ !old('id_edit') ? old('correo') : '' }}" maxlength="200">
+                            <!-- Validado: pattern estricto para email -->
+                            <input type="email" name="correo" class="form-control @if($errors->has('correo') && !old('id_edit')) is-invalid @endif" placeholder="Ej. contacto@editorial.com" value="{{ !old('id_edit') ? old('correo') : '' }}" maxlength="200" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Debe ser un correo válido, ej: nombre@dominio.com">
                             @if($errors->has('correo') && !old('id_edit'))<div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('correo') }}</div>@endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control" placeholder="Ej. +52 55 1234 5678" value="{{ !old('id_edit') ? old('telefono') : '' }}" maxlength="50">
+                            <!-- Validado: type="tel", oninput regex para bloquear letras, y clase phone-input -->
+                            <input type="tel" name="telefono" class="form-control phone-input" placeholder="Ej. +52 55 1234 5678" value="{{ !old('id_edit') ? old('telefono') : '' }}" maxlength="20" oninput="this.value = this.value.replace(/[^0-9+\-\s()]/g, '')">
+                            <small class="text-muted" style="font-size: 0.75rem;">Solo se permiten números.</small>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
@@ -112,29 +127,30 @@
                         <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Editorial</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <form action="{{ route('editoriales.update', $ed->id) }}" method="post" novalidate>
+                    <form action="{{ route('editoriales.update', $ed->id) }}" method="post">
                         @csrf @method('PUT')
                         <input type="hidden" name="id_edit" value="{{ $ed->id }}">
                         <div class="modal-body p-4">
                             <div class="mb-3">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Nombre</label>
-                                <input type="text" name="nombre" class="form-control @if($errors->has('nombre') && old('id_edit') == $ed->id) is-invalid @endif" value="{{ old('id_edit') == $ed->id ? old('nombre') : $ed->nombre }}" required maxlength="200">
+                                <input type="text" name="nombre" class="form-control @if($errors->has('nombre') && old('id_edit') == $ed->id) is-invalid @endif" value="{{ old('id_edit') == $ed->id ? old('nombre') : $ed->nombre }}" required minlength="2" maxlength="200">
                                 @if($errors->has('nombre') && old('id_edit') == $ed->id)<div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('nombre') }}</div>@endif
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">País</label>
-                                <select name="pais_id" class="form-select" required>
+                                <select name="pais_id" class="form-select @if($errors->has('pais_id') && old('id_edit') == $ed->id) is-invalid @endif" required>
                                     @foreach($paises as $p)<option value="{{ $p->id }}" {{ (old('id_edit') == $ed->id ? old('pais_id') : $ed->pais_id) == $p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>@endforeach
                                 </select>
+                                @if($errors->has('pais_id') && old('id_edit') == $ed->id)<div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('pais_id') }}</div>@endif
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Correo Electrónico</label>
-                                <input type="email" name="correo" class="form-control @if($errors->has('correo') && old('id_edit') == $ed->id) is-invalid @endif" value="{{ old('id_edit') == $ed->id ? old('correo') : $ed->correo }}" maxlength="200">
+                                <input type="email" name="correo" class="form-control @if($errors->has('correo') && old('id_edit') == $ed->id) is-invalid @endif" value="{{ old('id_edit') == $ed->id ? old('correo') : $ed->correo }}" maxlength="200" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Debe ser un correo válido, ej: nombre@dominio.com">
                                 @if($errors->has('correo') && old('id_edit') == $ed->id)<div class="zapoteca-error"><i class="fa-solid fa-circle-exclamation me-2"></i> {{ $errors->first('correo') }}</div>@endif
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold" style="color: #4b1c71;">Teléfono</label>
-                                <input type="text" name="telefono" class="form-control" value="{{ old('id_edit') == $ed->id ? old('telefono') : $ed->telefono }}" maxlength="50">
+                                <input type="tel" name="telefono" class="form-control phone-input" value="{{ old('id_edit') == $ed->id ? old('telefono') : $ed->telefono }}" maxlength="20" oninput="this.value = this.value.replace(/[^0-9+\-\s()]/g, '')">
                             </div>
                         </div>
                         <div class="modal-footer border-0 p-4 pt-0">
@@ -170,14 +186,36 @@
         </div>
     @endforeach
 
-    @if($errors->any())
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
+    <!-- Scripts para validaciones y UI -->
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            // Inicializar las banderas para validación visual de teléfono
+            var phoneInputs = document.querySelectorAll('.phone-input');
+            phoneInputs.forEach(function(input) {
+                var iti = window.intlTelInput(input, {
+                    initialCountry: "mx",
+                    separateDialCode: true,
+                    utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js",
+                });
+                var form = input.closest('form');
+                if(form) {
+                    form.addEventListener('submit', function() {
+                        if(input.value.trim() !== "") {
+                            input.value = iti.getNumber(); // Consolida código de país y número antes de enviar
+                        }
+                    });
+                }
+            });
+
+            // Lógica original para reabrir modales si hay error
+            @if($errors->any())
                 var idEdit = '{{ old("id_edit") }}';
                 var modalId = idEdit ? 'modalEdit' + idEdit : 'modalCreateEditorial';
                 var el = document.getElementById(modalId);
                 if (el) { var m = new bootstrap.Modal(el); m.show(); }
-            });
-        </script>
-    @endif
+            @endif
+        });
+    </script>
 @endsection
