@@ -188,188 +188,145 @@ class VentaController extends Controller
 
     public function generarPDF($id)
     {
-        $venta = Venta::findOrFail($id);
+        // ── Carga completa con relaciones reales ──────────────────────────
+        $venta = Venta::with([
+            'usuario.persona',
+            'detallesVentas.lote.edicion.libro',
+        ])->findOrFail($id);
 
-        $columnas = [
-            'ID',
-            'Cliente',
-            'Total',
-            'Fecha'
-        ];
+        // ── Nombre del usuario que realizó la venta ───────────────────────
+        $persona   = $venta->usuario->persona ?? null;
+        $vendedor  = $persona
+            ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+            : ($venta->usuario->correo ?? 'N/A');
 
-        $datos = [
-            $venta->id,
-            $venta->cliente ?? 'N/A',
-            $venta->total,
-            $venta->created_at
-        ];
+        // ── Estadísticas de la venta ──────────────────────────────────────
+        $totalItems = $venta->detallesVentas->sum('cantidad');
+        $totalTitulos = $venta->detallesVentas->count();
 
-        $pdf = Pdf::loadView('pdf.individual', [
-            'titulo' => 'Reporte de Venta',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        // ── Usuario autenticado que genera el PDF ─────────────────────────
+        $generadoPor = auth()->user()->correo ?? 'Sistema';
 
-        return $pdf->download('venta_' . $venta->id . '.pdf');
+        $pdf = Pdf::loadView('pdf.ventas.individual', [
+            'titulo'       => 'Comprobante de Venta #' . $venta->folio,
+            'venta'        => $venta,
+            'vendedor'     => $vendedor,
+            'totalItems'   => $totalItems,
+            'totalTitulos' => $totalTitulos,
+            'generadoPor'  => $generadoPor,
+        ])->setPaper('letter', 'portrait');
+
+        return $pdf->download('venta_' . $venta->folio . '.pdf');
     }
 
     public function reporteGeneral(Request $request)
     {
-        $query = Venta::query();
+        // ── Query base con relaciones ─────────────────────────────────────
+        $query = Venta::with('usuario.persona');
 
-        // FILTROS
-        if ($request->fecha) {
-            $query->whereDate('created_at', $request->fecha);
+        // ── Filtros Oracle-compatibles ────────────────────────────────────
+        if ($request->filled('fecha')) {
+            // TRUNC elimina la parte de hora para comparar solo la fecha
+            $query->whereRaw("TRUNC(fecha) = TO_DATE(?, 'YYYY-MM-DD')", [$request->fecha]);
         }
 
-        if ($request->mes) {
-            $query->whereMonth('created_at', $request->mes);
+        if ($request->filled('mes')) {
+            $query->whereRaw('EXTRACT(MONTH FROM fecha) = ?', [$request->mes]);
         }
 
-        if ($request->anio) {
-            $query->whereYear('created_at', $request->anio);
+        if ($request->filled('anio')) {
+            $query->whereRaw('EXTRACT(YEAR FROM fecha) = ?', [$request->anio]);
         }
 
-        // OBTENER VENTAS
-        $ventas = $query->orderBy('created_at', 'desc')->get();
+        $ventas = $query->orderBy('fecha', 'desc')->get();
 
-        // VALIDACIÓN
         if ($ventas->isEmpty()) {
-
-            return redirect()->back()
-                ->with('error', 'No hay ventas registradas con esos filtros.');
+            return redirect()->back()->with('error', 'No hay ventas registradas con esos filtros.');
         }
 
-        // ESTADÍSTICAS
-        $totalVentas = $ventas->sum('total');
-
+        // ── Estadísticas ──────────────────────────────────────────────────
+        $totalVentas    = $ventas->sum('total');
         $cantidadVentas = $ventas->count();
-
         $promedioVentas = $ventas->avg('total');
+        $maxVenta       = $ventas->max('total');
+        $minVenta       = $ventas->min('total');
 
-        // COLUMNAS
-        $columnas = [
-            'ID',
-            'Cliente',
-            'Total',
-            'Fecha'
+        // ── Datos para la tabla ───────────────────────────────────────────
+        $datos = $ventas->map(function ($v) {
+            $persona  = $v->usuario->persona ?? null;
+            $vendedor = $persona
+                ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+                : ($v->usuario->correo ?? 'N/A');
+
+            return [
+                'folio'    => $v->folio,
+                'vendedor' => $vendedor,
+                'total'    => '$' . number_format($v->total, 2),
+                'recibido' => '$' . number_format($v->monto_recibido ?? 0, 2),
+                'cambio'   => '$' . number_format($v->cambio ?? 0, 2),
+                'fecha'    => $v->fecha
+                    ? \Carbon\Carbon::parse($v->fecha)->format('d/m/Y')
+                    : '—',
+            ];
+        });
+
+        // ── Datos gráfica: ventas por mes (año completo) ──────────────────
+        $mesesTexto = [
+            1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+            5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic',
         ];
 
-        // DATOS TABLA
-        $datos = [];
-
-        foreach ($ventas as $venta) {
-
-            $datos[] = [
-
-                $venta->id,
-
-                $venta->cliente ?? 'N/A',
-
-                '$' . number_format($venta->total, 2),
-
-                $venta->created_at->format('d/m/Y')
-            ];
-        }
-
-        // AGRUPAR VENTAS POR MES PARA GRÁFICA
-        $ventasPorMes = Venta::selectRaw("
-        EXTRACT(MONTH FROM created_at) as mes,
-        SUM(total) as total
-    ")
-            ->groupByRaw("EXTRACT(MONTH FROM created_at)")
-            ->orderByRaw("EXTRACT(MONTH FROM created_at)")
+        $ventasPorMes = Venta::selectRaw(
+            'EXTRACT(MONTH FROM fecha) as mes, SUM(total) as total'
+        )
+            ->groupByRaw('EXTRACT(MONTH FROM fecha)')
+            ->orderByRaw('EXTRACT(MONTH FROM fecha)')
             ->get();
 
-        $mesesTexto = [
-            1 => 'Enero',
-            2 => 'Febrero',
-            3 => 'Marzo',
-            4 => 'Abril',
-            5 => 'Mayo',
-            6 => 'Junio',
-            7 => 'Julio',
-            8 => 'Agosto',
-            9 => 'Septiembre',
-            10 => 'Octubre',
-            11 => 'Noviembre',
-            12 => 'Diciembre'
-        ];
+        $labels  = $ventasPorMes->map(fn($i) => $mesesTexto[(int)$i->mes] ?? "Mes {$i->mes}")->toArray();
+        $valores = $ventasPorMes->map(fn($i) => round((float)$i->total, 2))->toArray();
 
-        $labels = [];
-        $valores = [];
-
-        foreach ($ventasPorMes as $item) {
-
-            $labels[] = $mesesTexto[$item->mes];
-
-            $valores[] = round($item->total, 2);
-        }
-
-        // URL DE QUICKCHART
+        // ── QuickChart → Base64 ───────────────────────────────────────────
         $chartConfig = [
-
             'type' => 'bar',
-
             'data' => [
-
-                'labels' => $labels,
-
+                'labels'   => $labels,
                 'datasets' => [[
-
-                    'label' => 'Ventas por Mes',
-
-                    'data' => $valores
-                ]]
-            ]
+                    'label'           => 'Ventas por Mes ($)',
+                    'data'            => $valores,
+                    'backgroundColor' => 'rgba(75, 28, 113, 0.75)',
+                    'borderColor'     => '#4b1c71',
+                    'borderWidth'     => 1,
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => true]],
+                'scales'  => ['y' => ['beginAtZero' => true]],
+            ],
         ];
 
-        $chartUrl = 'https://quickchart.io/chart?c=' .
-            urlencode(json_encode($chartConfig));
+        $chartUrl      = 'https://quickchart.io/chart?c=' . urlencode(json_encode($chartConfig));
+        $imageContent  = file_get_contents($chartUrl);
+        $chartBase64   = 'data:image/png;base64,' . base64_encode($imageContent);
 
-        // DESCARGAR IMAGEN
-        $imageContent = file_get_contents($chartUrl);
-
-        // CONVERTIR A BASE64
-        $chartBase64 = 'data:image/png;base64,' .
-            base64_encode($imageContent);
-
-        // TÍTULO DINÁMICO
+        // ── Título dinámico ───────────────────────────────────────────────
         $titulo = 'Reporte General de Ventas';
+        if ($request->filled('fecha'))  $titulo .= ' — ' . date('d/m/Y', strtotime($request->fecha));
+        if ($request->filled('mes'))    $titulo .= ' — Mes ' . $request->mes;
+        if ($request->filled('anio'))   $titulo .= ' — ' . $request->anio;
 
-        if ($request->fecha) {
-
-            $titulo .= ' - Día ' .
-                date('d/m/Y', strtotime($request->fecha));
-        }
-
-        if ($request->mes) {
-
-            $titulo .= ' - Mes ' . $request->mes;
-        }
-
-        if ($request->anio) {
-
-            $titulo .= ' - Año ' . $request->anio;
-        }
-
-        // GENERAR PDF
-        $pdf = Pdf::loadView('pdf.reporte_general_ventas', [
-
-            'titulo' => $titulo,
-
-            'columnas' => $columnas,
-
-            'datos' => $datos,
-
-            'totalVentas' => $totalVentas,
-
+        $pdf = Pdf::loadView('pdf.ventas.reporte_general', [
+            'titulo'         => $titulo,
+            'datos'          => $datos,
+            'totalVentas'    => $totalVentas,
             'cantidadVentas' => $cantidadVentas,
-
             'promedioVentas' => $promedioVentas,
-
-            'chartBase64' => $chartBase64
-        ]);
+            'maxVenta'       => $maxVenta,
+            'minVenta'       => $minVenta,
+            'chartBase64'    => $chartBase64,
+            'generadoPor'    => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'landscape');
 
         return $pdf->download('reporte_general_ventas.pdf');
     }

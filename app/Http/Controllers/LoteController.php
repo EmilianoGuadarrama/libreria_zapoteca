@@ -123,50 +123,137 @@ class LoteController extends Controller
 
     public function generarPDF($id)
     {
-        $lote = Lote::findOrFail($id);
+        // ── Carga completa con relaciones ────────────────────────────────────
+        $lote = Lote::with([
+            'edicion.libro',
+            'compra.proveedor',
+            'ubicacion',
+            'usuario.persona',
+        ])->findOrFail($id);
 
-        $columnas = ['ID', 'Nombre', 'Cantidad', 'Fecha'];
+        // ── Nombre del usuario que registró el lote ───────────────────────
+        $persona       = $lote->usuario->persona ?? null;
+        $registradoPor = $persona
+            ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+            : ($lote->usuario->correo ?? 'N/A');
 
-        $datos = [
-            $lote->id,
-            $lote->nombre,
-            $lote->cantidad,
-            $lote->created_at
-        ];
+        $pdf = Pdf::loadView('pdf.lotes.individual', [
+            'titulo'        => 'Ficha de Lote #' . $lote->codigo,
+            'lote'          => $lote,
+            'registradoPor' => $registradoPor,
+            'generadoPor'   => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'portrait');
 
-        $pdf = Pdf::loadView('pdf.individual', [
-            'titulo' => 'Reporte de Lote',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        return $pdf->download('lote_' . $lote->codigo . '.pdf');
     }
 
-    public function reporteGeneral()
+    public function reporteGeneral(Request $request)
     {
-        $lotes = Lote::all();
+        // ── Query base con relaciones ─────────────────────────────────────
+        $query = Lote::with(['edicion.libro', 'compra.proveedor', 'ubicacion', 'usuario.persona']);
+
+        // ── Filtros Oracle-compatibles sobre fecha_entrada ─────────────────
+        if ($request->filled('fecha')) {
+            $query->whereRaw("TRUNC(fecha_entrada) = TO_DATE(?, 'YYYY-MM-DD')", [$request->fecha]);
+        }
+
+        if ($request->filled('mes')) {
+            $query->whereRaw('EXTRACT(MONTH FROM fecha_entrada) = ?', [$request->mes]);
+        }
+
+        if ($request->filled('anio')) {
+            $query->whereRaw('EXTRACT(YEAR FROM fecha_entrada) = ?', [$request->anio]);
+        }
+
+        $lotes = $query->orderBy('id', 'desc')->get();
 
         if ($lotes->isEmpty()) {
-            return redirect()->back()->with('error', 'No hay lotes registrados');
+            return redirect()->back()->with('error', 'No hay lotes registrados con esos filtros.');
         }
 
-        $columnas = ['ID', 'Nombre', 'Cantidad', 'Fecha'];
+        // ── Estadísticas ──────────────────────────────────────────────────
+        $totalLotes     = $lotes->count();
+        $totalUnidades  = $lotes->sum('cantidad');
+        $promedioUnid   = $lotes->avg('cantidad');
+        $maxUnidades    = $lotes->max('cantidad');
+        $minUnidades    = $lotes->min('cantidad');
 
-        $datos = [];
+        // ── Datos para la tabla ───────────────────────────────────────────
+        $datos = $lotes->map(function ($l) {
+            $persona = $l->usuario->persona ?? null;
+            $usuario = $persona
+                ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+                : ($l->usuario->correo ?? 'N/A');
 
-        foreach ($lotes as $lote) {
-            $datos[] = [
-                $lote->id,
-                $lote->nombre,
-                $lote->cantidad,
-                $lote->created_at
+            return [
+                'codigo'    => $l->codigo,
+                'libro'     => $l->edicion->libro->titulo ?? 'N/A',
+                'compra'    => $l->compra->folio_factura ?? 'N/A',
+                'proveedor' => $l->compra->proveedor->nombre ?? 'N/A',
+                'cantidad'  => $l->cantidad,
+                'ubicacion' => $l->ubicacion->nombre ?? 'N/A',
+                'usuario'   => $usuario,
+                'fecha'     => $l->fecha_entrada
+                    ? \Carbon\Carbon::parse($l->fecha_entrada)->format('d/m/Y')
+                    : '—',
             ];
-        }
+        });
 
-        $pdf = Pdf::loadView('pdf.reporte_general', [
-            'titulo' => 'Reporte General de Lotes',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        // ── Datos gráfica: lotes por mes ─────────────────────────────────
+        $mesesTexto = [
+            1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+            5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic',
+        ];
+
+        $lotesPorMes = Lote::selectRaw(
+            'EXTRACT(MONTH FROM fecha_entrada) as mes, COUNT(*) as total'
+        )
+            ->groupByRaw('EXTRACT(MONTH FROM fecha_entrada)')
+            ->orderByRaw('EXTRACT(MONTH FROM fecha_entrada)')
+            ->get();
+
+        $labels  = $lotesPorMes->map(fn($i) => $mesesTexto[(int)$i->mes] ?? "Mes {$i->mes}")->toArray();
+        $valores = $lotesPorMes->map(fn($i) => (int)$i->total)->toArray();
+
+        // ── QuickChart → Base64 ───────────────────────────────────────────
+        $chartConfig = [
+            'type' => 'bar',
+            'data' => [
+                'labels'   => $labels,
+                'datasets' => [[
+                    'label'           => 'Lotes registrados por mes',
+                    'data'            => $valores,
+                    'backgroundColor' => 'rgba(75, 28, 113, 0.75)',
+                    'borderColor'     => '#4b1c71',
+                    'borderWidth'     => 1,
+                ]],
+            ],
+            'options' => [
+                'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['stepSize' => 1]]],
+            ],
+        ];
+
+        $chartUrl    = 'https://quickchart.io/chart?c=' . urlencode(json_encode($chartConfig));
+        $chartBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($chartUrl));
+
+        // ── Título dinámico ───────────────────────────────────────────────
+        $titulo = 'Reporte General de Lotes';
+        if ($request->filled('fecha')) $titulo .= ' — ' . date('d/m/Y', strtotime($request->fecha));
+        if ($request->filled('mes'))   $titulo .= ' — Mes ' . $request->mes;
+        if ($request->filled('anio'))  $titulo .= ' — ' . $request->anio;
+
+        $pdf = Pdf::loadView('pdf.lotes.reporte_general', [
+            'titulo'        => $titulo,
+            'datos'         => $datos,
+            'totalLotes'    => $totalLotes,
+            'totalUnidades' => $totalUnidades,
+            'promedioUnid'  => $promedioUnid,
+            'maxUnidades'   => $maxUnidades,
+            'minUnidades'   => $minUnidades,
+            'chartBase64'   => $chartBase64,
+            'generadoPor'   => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'landscape');
 
         return $pdf->download('reporte_general_lotes.pdf');
     }

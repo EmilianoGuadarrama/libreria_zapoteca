@@ -132,63 +132,135 @@ class CompraController extends Controller
 
     public function generarPDF($id)
     {
-        $compra = Compra::findOrFail($id);
+        // ── Carga completa con relaciones ────────────────────────────────────
+        $compra = Compra::with([
+            'proveedor',
+            'usuario.persona',
+            'detalles.edicion.libro',
+        ])->findOrFail($id);
 
-        $columnas = ['ID', 'Proveedor', 'Total', 'Fecha'];
+        // ── Nombre del usuario que registró la compra ───────────────────────
+        $persona      = $compra->usuario->persona ?? null;
+        $registradoPor = $persona
+            ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+            : ($compra->usuario->correo ?? 'N/A');
 
-        $datos = [
-            $compra->id,
-            $compra->proveedor->nombre ?? 'N/A',
-            $compra->total_compra,
-            $compra->created_at
-        ];
+        // ── Estadísticas de la compra ───────────────────────────────────
+        $totalItems   = $compra->detalles->sum('cantidad');
+        $totalTitulos = $compra->detalles->count();
 
-        $pdf = Pdf::loadView('pdf.individual', [
-            'titulo' => 'Reporte de Compra',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        $pdf = Pdf::loadView('pdf.compras.individual', [
+            'titulo'        => 'Orden de Compra #' . $compra->folio_factura,
+            'compra'        => $compra,
+            'registradoPor' => $registradoPor,
+            'totalItems'    => $totalItems,
+            'totalTitulos'  => $totalTitulos,
+            'generadoPor'   => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'portrait');
 
-        return $pdf->download('compra_' . $compra->id . '.pdf');
+        return $pdf->download('compra_' . $compra->folio_factura . '.pdf');
     }
 
-    public function reporteGeneral()
+    public function reporteGeneral(Request $request)
     {
-        $compras = Compra::with('proveedor')
-            ->get();
+        // ── Query base con relaciones ─────────────────────────────────────
+        $query = Compra::with(['proveedor', 'usuario.persona']);
 
-        $columnas = [
-            'ID',
-            'Proveedor',
-            'Factura',
-            'Fecha',
-            'Estado',
-            'Total'
-        ];
+        // ── Filtros Oracle-compatibles ────────────────────────────────────
+        if ($request->filled('fecha')) {
+            $query->whereRaw("TRUNC(fecha_compra) = TO_DATE(?, 'YYYY-MM-DD')", [$request->fecha]);
+        }
 
-        $datos = $compras->map(function ($compra) {
+        if ($request->filled('mes')) {
+            $query->whereRaw('EXTRACT(MONTH FROM fecha_compra) = ?', [$request->mes]);
+        }
+
+        if ($request->filled('anio')) {
+            $query->whereRaw('EXTRACT(YEAR FROM fecha_compra) = ?', [$request->anio]);
+        }
+
+        $compras = $query->orderBy('fecha_compra', 'desc')->get();
+
+        if ($compras->isEmpty()) {
+            return redirect()->back()->with('error', 'No hay compras registradas con esos filtros.');
+        }
+
+        // ── Estadísticas ──────────────────────────────────────────────────
+        $totalInversion   = $compras->sum('total_compra');
+        $cantidadCompras  = $compras->count();
+        $promedioCompra   = $compras->avg('total_compra');
+        $maxCompra        = $compras->max('total_compra');
+        $minCompra        = $compras->min('total_compra');
+
+        // ── Datos para la tabla ───────────────────────────────────────────
+        $datos = $compras->map(function ($c) {
             return [
-                $compra->id,
-                $compra->proveedor->nombre,
-                $compra->folio_factura,
-                $compra->fecha_compra,
-                $compra->estado,
-                '$' . number_format($compra->total_compra, 2)
+                'folio'      => $c->folio_factura,
+                'proveedor'  => $c->proveedor->nombre ?? 'N/A',
+                'estado'     => $c->estado,
+                'total'      => '$' . number_format($c->total_compra, 2),
+                'fecha'      => $c->fecha_compra
+                    ? \Carbon\Carbon::parse($c->fecha_compra)->format('d/m/Y')
+                    : '—',
             ];
         });
 
-        $estadisticas = [
-            'Total compras' => $compras->count(),
-            'Monto total' => '$' . number_format($compras->sum('total_compra'), 2)
+        // ── Datos gráfica: compras por mes ────────────────────────────────
+        $mesesTexto = [
+            1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+            5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic',
         ];
 
-        $pdf = Pdf::loadView('pdf.reporte_general', compact(
-            'columnas',
-            'datos',
-            'titulo',
-            'estadisticas'
-        ));
+        $comprasPorMes = Compra::selectRaw(
+            'EXTRACT(MONTH FROM fecha_compra) as mes, SUM(total_compra) as total'
+        )
+            ->groupByRaw('EXTRACT(MONTH FROM fecha_compra)')
+            ->orderByRaw('EXTRACT(MONTH FROM fecha_compra)')
+            ->get();
 
-        return $pdf->download('reporte_compras.pdf');
+        $labels  = $comprasPorMes->map(fn($i) => $mesesTexto[(int)$i->mes] ?? "Mes {$i->mes}")->toArray();
+        $valores = $comprasPorMes->map(fn($i) => round((float)$i->total, 2))->toArray();
+
+        // ── QuickChart → Base64 ───────────────────────────────────────────
+        $chartConfig = [
+            'type' => 'bar',
+            'data' => [
+                'labels'   => $labels,
+                'datasets' => [[
+                    'label'           => 'Compras por Mes ($)',
+                    'data'            => $valores,
+                    'backgroundColor' => 'rgba(75, 28, 113, 0.75)',
+                    'borderColor'     => '#4b1c71',
+                    'borderWidth'     => 1,
+                ]],
+            ],
+            'options' => [
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ];
+
+        $chartUrl     = 'https://quickchart.io/chart?c=' . urlencode(json_encode($chartConfig));
+        $chartBase64  = 'data:image/png;base64,' . base64_encode(file_get_contents($chartUrl));
+
+        // ── Título dinámico ───────────────────────────────────────────────
+        $titulo = 'Reporte General de Compras';
+        if ($request->filled('fecha')) $titulo .= ' — ' . date('d/m/Y', strtotime($request->fecha));
+        if ($request->filled('mes'))   $titulo .= ' — Mes ' . $request->mes;
+        if ($request->filled('anio'))  $titulo .= ' — ' . $request->anio;
+
+        $pdf = Pdf::loadView('pdf.compras.reporte_general', [
+            'titulo'          => $titulo,
+            'datos'           => $datos,
+            'totalInversion'  => $totalInversion,
+            'cantidadCompras' => $cantidadCompras,
+            'promedioCompra'  => $promedioCompra,
+            'maxCompra'       => $maxCompra,
+            'minCompra'       => $minCompra,
+            'chartBase64'     => $chartBase64,
+            'generadoPor'     => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'landscape');
+
+        return $pdf->download('reporte_general_compras.pdf');
     }
 }

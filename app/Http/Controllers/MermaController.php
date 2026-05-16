@@ -138,61 +138,134 @@ class MermaController extends Controller
 
     public function generarPDF($id)
     {
-        $merma = Merma::findOrFail($id);
+        // ── Solo mermas PROCESADAS ───────────────────────────────────────────────
+        $merma = Merma::with([
+            'lote.edicion.libro',
+            'usuario.persona',
+        ])->findOrFail($id);
 
-        // Validación opcional (como ya usabas)
         if ($merma->estatus !== 'PROCESADO') {
-            return redirect()->back()->with('error', 'Solo se pueden generar PDFs de mermas procesadas');
+            return redirect()->back()->with('error', 'Solo se pueden generar PDFs de mermas con estatus PROCESADO.');
         }
 
-        $columnas = ['ID', 'Lote', 'Tipo', 'Cantidad', 'Destino', 'Fecha'];
+        // ── Nombre del usuario que reportó la merma ───────────────────────
+        $persona       = $merma->usuario->persona ?? null;
+        $reportadoPor  = $persona
+            ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+            : ($merma->usuario->correo ?? 'N/A');
 
-        $datos = [
-            $merma->id,
-            $merma->lote,
-            $merma->tipo_merma,
-            $merma->cantidad,
-            $merma->destino,
-            $merma->fecha_reporte
-        ];
+        $pdf = Pdf::loadView('pdf.mermas.individual', [
+            'titulo'       => 'Reporte de Merma #' . $merma->id,
+            'merma'        => $merma,
+            'reportadoPor' => $reportadoPor,
+            'generadoPor'  => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'portrait');
 
-        $pdf = Pdf::loadView('pdf.individual', [
-            'titulo' => 'Reporte de Merma',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
-
-        return $pdf->download('reporte_merma_' . $merma->id . '.pdf');
+        return $pdf->download('merma_' . $merma->id . '.pdf');
     }
 
-    public function reporteGeneral()
+    public function reporteGeneral(Request $request)
     {
-        $mermas = Merma::where('estatus', 'PROCESADO')->get();
+        // ── Query base: solo mermas PROCESADAS ────────────────────────────
+        $query = Merma::with(['lote.edicion.libro', 'usuario.persona'])
+            ->where('estatus', 'PROCESADO');
+
+        // ── Filtros Oracle-compatibles sobre fecha_reporte ───────────────────
+        if ($request->filled('fecha')) {
+            $query->whereRaw("TRUNC(fecha_reporte) = TO_DATE(?, 'YYYY-MM-DD')", [$request->fecha]);
+        }
+
+        if ($request->filled('mes')) {
+            $query->whereRaw('EXTRACT(MONTH FROM fecha_reporte) = ?', [$request->mes]);
+        }
+
+        if ($request->filled('anio')) {
+            $query->whereRaw('EXTRACT(YEAR FROM fecha_reporte) = ?', [$request->anio]);
+        }
+
+        $mermas = $query->orderBy('fecha_reporte', 'desc')->get();
 
         if ($mermas->isEmpty()) {
-            return redirect()->back()->with('error', 'No hay mermas procesadas');
+            return redirect()->back()->with('error', 'No hay mermas procesadas con esos filtros.');
         }
 
-        $columnas = ['ID', 'Lote', 'Tipo', 'Cantidad', 'Destino', 'Fecha'];
+        // ── Estadísticas generales ─────────────────────────────────────────
+        $totalMermas    = $mermas->count();
+        $totalUnidades  = $mermas->sum('cantidad');
+        $promedioUnid   = $mermas->avg('cantidad');
+        $maxUnidades    = $mermas->max('cantidad');
+        $minUnidades    = $mermas->min('cantidad');
 
-        $datos = [];
+        // ── Agrupaciones ────────────────────────────────────────────────────
+        $porTipo    = $mermas->groupBy('tipo_merma')->map->count();
+        $porDestino = $mermas->groupBy('destino')->map->count();
 
-        foreach ($mermas as $merma) {
-            $datos[] = [
-                $merma->id,
-                $merma->lote,
-                $merma->tipo_merma,
-                $merma->cantidad,
-                $merma->destino,
-                $merma->fecha_reporte
+        // ── Datos para la tabla ───────────────────────────────────────────
+        $datos = $mermas->map(function ($m) {
+            $persona = $m->usuario->persona ?? null;
+            $usuario = $persona
+                ? trim($persona->nombre . ' ' . $persona->apellido_paterno)
+                : ($m->usuario->correo ?? 'N/A');
+
+            return [
+                'id'           => $m->id,
+                'lote_codigo'  => $m->lote->codigo ?? 'N/A',
+                'libro'        => $m->lote->edicion->libro->titulo ?? 'N/A',
+                'tipo'         => $m->tipo_merma,
+                'cantidad'     => $m->cantidad,
+                'destino'      => $m->destino,
+                'usuario'      => $usuario,
+                'fecha'        => $m->fecha_reporte
+                    ? \Carbon\Carbon::parse($m->fecha_reporte)->format('d/m/Y')
+                    : '—',
             ];
-        }
+        });
 
-        $pdf = Pdf::loadView('pdf.reporte_general', [
-            'titulo' => 'Reporte General de Mermas',
-            'columnas' => $columnas,
-            'datos' => $datos
-        ]);
+        // ── Gráfica: mermas por tipo ────────────────────────────────────────
+        $labels  = $porTipo->keys()->toArray();
+        $valores = $porTipo->values()->toArray();
+
+        $chartConfig = [
+            'type' => 'doughnut',
+            'data' => [
+                'labels'   => $labels,
+                'datasets' => [[
+                    'data'            => $valores,
+                    'backgroundColor' => [
+                        'rgba(75,28,113,0.8)',
+                        'rgba(155,89,182,0.8)',
+                        'rgba(215,189,226,0.9)',
+                        'rgba(192,57,43,0.8)',
+                    ],
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['position' => 'right']],
+            ],
+        ];
+
+        $chartUrl    = 'https://quickchart.io/chart?c=' . urlencode(json_encode($chartConfig));
+        $chartBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($chartUrl));
+
+        // ── Título dinámico ───────────────────────────────────────────────
+        $titulo = 'Reporte General de Mermas';
+        if ($request->filled('fecha')) $titulo .= ' — ' . date('d/m/Y', strtotime($request->fecha));
+        if ($request->filled('mes'))   $titulo .= ' — Mes ' . $request->mes;
+        if ($request->filled('anio'))  $titulo .= ' — ' . $request->anio;
+
+        $pdf = Pdf::loadView('pdf.mermas.reporte_general', [
+            'titulo'        => $titulo,
+            'datos'         => $datos,
+            'totalMermas'   => $totalMermas,
+            'totalUnidades' => $totalUnidades,
+            'promedioUnid'  => $promedioUnid,
+            'maxUnidades'   => $maxUnidades,
+            'minUnidades'   => $minUnidades,
+            'porTipo'       => $porTipo,
+            'porDestino'    => $porDestino,
+            'chartBase64'   => $chartBase64,
+            'generadoPor'   => auth()->user()->correo ?? 'Sistema',
+        ])->setPaper('letter', 'landscape');
 
         return $pdf->download('reporte_general_mermas.pdf');
     }
