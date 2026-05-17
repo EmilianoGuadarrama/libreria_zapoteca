@@ -42,17 +42,25 @@
                         <td>{{ $loop->iteration }}</td>
                         <td class="fw-semibold">{{ $genero->nombre }}</td>
                         <td class="text-end">
-                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
-                                    data-bs-toggle="modal" data-bs-target="#modalEditGenero{{ $genero->id }}"
-                                    title="Editar Género">
-                                <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
-                            </button>
+                            <div class="d-flex justify-content-end align-items-center gap-3">
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                        data-bs-toggle="modal" data-bs-target="#modalShowGenero{{ $genero->id }}"
+                                        title="Ver Detalles">
+                                    <i class="fa-solid fa-eye" style="color: #4b1c71;"></i>
+                                </button>
+                                
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                        data-bs-toggle="modal" data-bs-target="#modalEditGenero{{ $genero->id }}"
+                                        title="Editar Género">
+                                    <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
+                                </button>
 
-                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
-                                    data-bs-toggle="modal" data-bs-target="#modalDeleteGenero{{ $genero->id }}"
-                                    title="Eliminar Género">
-                                <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
-                            </button>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                        data-bs-toggle="modal" data-bs-target="#modalDeleteGenero{{ $genero->id }}"
+                                        title="Eliminar Género">
+                                    <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -90,6 +98,32 @@
     </div>
 
     @foreach($generos as $genero)
+        <div class="modal fade" id="modalShowGenero{{ $genero->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                    <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
+                        <h5 class="modal-title bebas fs-4">
+                            <i class="fa-solid fa-eye me-2"></i> Detalles del Género
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <h6 class="fw-bold" style="color: #4b1c71;">Información</h6>
+                            <p class="mb-1"><strong>Nombre:</strong> {{ $genero->nombre }}</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 p-4 pt-0 justify-content-end">
+                        <button type="button" class="btn text-white rounded-pill px-4 fw-bold me-2" style="background-color: #4b1c71;" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalEditGenero{{ $genero->id }}">
+                            <i class="fa-solid fa-pen-to-square me-2"></i> Editar
+                        </button>
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="modal fade" id="modalEditGenero{{ $genero->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">

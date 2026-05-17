@@ -202,25 +202,31 @@
                         @endif
                     </td>
                     <td class="text-end">
-                        <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
-                            data-bs-toggle="modal" data-bs-target="#modalEditMerma{{ $merma->id }}"
-                            title="Editar Merma">
-                            <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
-                        </button>
+                        <div class="d-flex justify-content-end align-items-center gap-3">
+                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                data-bs-toggle="modal" data-bs-target="#modalShowMerma{{ $merma->id }}"
+                                title="Ver Detalles">
+                                <i class="fa-solid fa-eye" style="color: #4b1c71;"></i>
+                            </button>
 
-                        <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
-                            data-bs-toggle="modal" data-bs-target="#modalDeleteMerma{{ $merma->id }}"
-                            title="Eliminar Merma">
-                            <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
-                        </button>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                data-bs-toggle="modal" data-bs-target="#modalEditMerma{{ $merma->id }}"
+                                title="Editar Merma">
+                                <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
+                            </button>
 
-                        <button type="button"
-                            class="btn btn-link p-0 text-decoration-none fs-5"
-                            onclick="window.location.href='{{ route('mermas.pdf', $merma->id) }}'"
-                            title="Descargar PDF">
+                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                data-bs-toggle="modal" data-bs-target="#modalDeleteMerma{{ $merma->id }}"
+                                title="Eliminar Merma">
+                                <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                            </button>
 
-                            <i class="fa-solid fa-file-pdf" style="color: #dc3545;"></i>
-                        </button>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                onclick="window.location.href='{{ route('mermas.pdf', $merma->id) }}'"
+                                title="Descargar PDF">
+                                <i class="fa-solid fa-file-pdf" style="color: #dc3545;"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 @endforeach
@@ -318,8 +324,88 @@
     </div>
 </div>
 
-{{-- modales editar y eliminar --}}
+{{-- modales editar, eliminar y mostrar --}}
 @foreach($mermas as $merma)
+
+<div class="modal fade" id="modalShowMerma{{ $merma->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-eye me-2"></i> Detalles de la Merma</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row mb-3">
+                    <div class="col-sm-6">
+                        <h6 class="fw-bold" style="color: #4b1c71;">Información del Lote</h6>
+                        <p class="mb-1"><strong>Lote #:</strong> {{ $merma->lote_id }}</p>
+                        <p class="mb-1"><strong>Libro:</strong> {{ $merma->lote->edicion->libro->titulo ?? 'N/A' }}</p>
+                        <p class="mb-1"><strong>Proveedor:</strong> {{ $merma->lote->compra->proveedor->nombre ?? 'N/A' }}</p>
+                    </div>
+                    <div class="col-sm-6 text-end">
+                        <h6 class="fw-bold" style="color: #4b1c71;">Detalles del Reporte</h6>
+                        <p class="mb-1"><strong>Fecha:</strong> {{ $merma->fecha_reporte ? \Carbon\Carbon::parse($merma->fecha_reporte)->format('d/m/Y H:i') : 'N/A' }}</p>
+                        <p class="mb-1"><strong>Registró:</strong> {{ $nombreUsuario }}</p>
+                        <p class="mb-1"><strong>Estatus:</strong> 
+                            @if($merma->estatus === 'PROCESADO')
+                                <span class="badge bg-success">PROCESADO</span>
+                            @else
+                                <span class="badge bg-warning text-dark">PENDIENTE</span>
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                
+                <h6 class="fw-bold mb-3" style="color: #4b1c71;">Datos de la Merma</h6>
+                <div class="table-responsive border rounded-3">
+                    <table class="table table-striped mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Tipo de Merma</th>
+                                <th>Destino</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Precio Unit.</th>
+                                <th class="text-end">Total Merma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="align-middle">{{ $merma->tipo_merma }}</td>
+                                <td class="align-middle">{{ str_replace('_', ' ', $merma->destino) }}</td>
+                                <td class="text-center align-middle">{{ $merma->cantidad }}</td>
+                                <td class="text-end align-middle">${{ number_format($merma->precio_unitario, 2) }}</td>
+                                <td class="text-end fw-bold align-middle" style="color: #4b1c71;">${{ number_format($merma->total_merma, 2) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3" style="background-color: #e6f4ea; border: 1px solid #cce5df;">
+                            <h6 class="fw-bold text-success mb-1">Monto Recuperado</h6>
+                            <h5 class="mb-0 text-success">${{ number_format($merma->monto_recuperado, 2) }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3" style="background-color: #fce8e6; border: 1px solid #f8d7da;">
+                            <h6 class="fw-bold text-danger mb-1">Monto Perdido</h6>
+                            <h5 class="mb-0 text-danger">${{ number_format($merma->monto_perdido, 2) }}</h5>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 justify-content-end">
+                <button type="button" class="btn text-white rounded-pill px-4 fw-bold me-2" style="background-color: #4b1c71;" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalEditMerma{{ $merma->id }}">
+                    <i class="fa-solid fa-pen-to-square me-2"></i> Editar
+                </button>
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalEditMerma{{ $merma->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">

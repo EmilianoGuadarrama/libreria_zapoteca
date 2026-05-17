@@ -6,7 +6,7 @@
 @section('dashboard-content')
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0 text-dark fw-bold">Ubicaciones</h3>
+        <h3 class="mb-0 fw-bold" style="color: #4b1c71;">Ubicaciones</h3>
         <button type="button" class="btn btn-link p-0 text-decoration-none fs-2"
                 data-bs-toggle="modal" data-bs-target="#modalCreateUbicacion" title="Nueva Ubicación">
             <i class="fa-solid fa-circle-plus" style="color: #4b1c71;"></i>
@@ -28,9 +28,6 @@
     @endif
 
     <div class="card border-0 shadow-sm mb-5" style="border-radius: 16px; overflow: hidden;">
-        <div class="card-header border-0 py-3" style="background-color: #f8f2fb;">
-            <h5 class="mb-0 fw-bold" style="color: #4b1c71;"><i class="fa-solid fa-location-dot me-2"></i>Listado de Ubicaciones</h5>
-        </div>
         <div class="card-body p-0">
             <div class="table-responsive p-3">
                 <table class="table table-bordered mi-datatable align-middle" id="tablaUbicaciones" style="width:100%">
@@ -69,14 +66,20 @@
                                 </button>
                             </td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-2"
-                                        data-bs-toggle="modal" data-bs-target="#modalEditUbicacion{{ $ubicacion->id }}" title="Editar">
-                                    <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
-                                </button>
-                                <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
-                                        data-bs-toggle="modal" data-bs-target="#modalDeleteUbicacion{{ $ubicacion->id }}" title="Eliminar">
-                                    <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
-                                </button>
+                                <div class="d-flex justify-content-end align-items-center gap-3">
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                            data-bs-toggle="modal" data-bs-target="#modalShowUbicacion{{ $ubicacion->id }}" title="Ver Detalles">
+                                        <i class="fa-solid fa-eye" style="color: #4b1c71;"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                            data-bs-toggle="modal" data-bs-target="#modalEditUbicacion{{ $ubicacion->id }}" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square" style="color: #4b1c71;"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-link p-0 text-decoration-none fs-5"
+                                            data-bs-toggle="modal" data-bs-target="#modalDeleteUbicacion{{ $ubicacion->id }}" title="Eliminar">
+                                        <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -160,6 +163,45 @@
         $edicionesEnUbi = $ubicacion->lotes->filter(fn($l) => $l->edicion && $l->edicion->libro)->unique('edicion_id');
         $cantLibros = $edicionesEnUbi->count();
     @endphp
+
+    {{-- MODAL MOSTRAR DETALLES --}}
+    <div class="modal fade" id="modalShowUbicacion{{ $ubicacion->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0" style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title bebas fs-4"><i class="fa-solid fa-eye me-2"></i> Detalles de la Ubicación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <h6 class="fw-bold" style="color: #4b1c71;">Información de la Ubicación</h6>
+                            <p class="mb-1"><strong>Pasillo:</strong> {{ $ubicacion->pasillo }}</p>
+                            <p class="mb-1"><strong>Estante:</strong> {{ $ubicacion->estante }}</p>
+                            <p class="mb-1"><strong>Nivel:</strong> {{ $ubicacion->nivel }}</p>
+                            <p class="mb-1"><strong>Código:</strong> <span class="badge rounded-pill" style="background-color:#f8f2fb;color:#4b1c71;border:1px solid #dbb6ee;">{{ $ubicacion->codigo }}</span></p>
+                        </div>
+                        <div class="col-sm-6 text-end">
+                            <h6 class="fw-bold" style="color: #4b1c71;">Datos Adicionales</h6>
+                            <p class="mb-1"><strong>Género:</strong> {{ $ubicacion->genero->nombre ?? 'Sin género' }}</p>
+                            <p class="mb-1"><strong>Total de Títulos (Ediciones):</strong> <span class="badge bg-secondary rounded-pill">{{ $cantLibros }}</span></p>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalLibrosUbicacion{{ $ubicacion->id }}">
+                                    <i class="fa-solid fa-book-open me-1"></i> Ver Libros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 justify-content-end">
+                    <button type="button" class="btn text-white rounded-pill px-4 fw-bold me-2" style="background-color: #4b1c71;" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalEditUbicacion{{ $ubicacion->id }}">
+                        <i class="fa-solid fa-pen-to-square me-2"></i> Editar
+                    </button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- MODAL EDITAR --}}
     <div class="modal fade" id="modalEditUbicacion{{ $ubicacion->id }}" tabindex="-1" aria-hidden="true">
