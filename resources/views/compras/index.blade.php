@@ -67,9 +67,17 @@
                         <label class="form-label fw-bold" style="color: #4b1c71;">Año</label>
                         <select name="anio" class="form-select bg-light">
                             <option value="">Seleccione</option>
+                            <option value="2020">2020</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
                             <option value="2024">2024</option>
                             <option value="2025">2025</option>
                             <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
                         </select>
                     </div>
 
@@ -299,6 +307,28 @@
     }
 </style>
 
+{{-- MODAL CONFIRMAR REPORTE --}}
+<div class="modal fade" id="modalConfirmarReporte" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title bebas fs-4">
+                    <i class="fa-solid fa-file-pdf me-2"></i> Generar Reporte PDF
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="fs-5 mb-1">¿Estás seguro de generar el reporte PDF con los filtros seleccionados?</p>
+                <p class="text-muted small mb-0 mt-2">El documento se descargará automáticamente.</p>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="document.getElementById('formReporte').submit();" data-bs-dismiss="modal">Sí, generar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     /* LÓGICA DEL CARRITO PARA EL MODAL CREATE */
     let carritoCompra = [];
@@ -389,27 +419,6 @@
         document.getElementById('items_compra_json').value = JSON.stringify(carritoCompra);
     }
 
-{{-- MODAL CONFIRMAR REPORTE --}}
-<div class="modal fade" id="modalConfirmarReporte" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title bebas fs-4">
-                    <i class="fa-solid fa-file-pdf me-2"></i> Generar Reporte PDF
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4 text-center">
-                <p class="fs-5 mb-1">¿Estás seguro de generar el reporte PDF con los filtros seleccionados?</p>
-                <p class="text-muted small mb-0 mt-2">El documento se descargará automáticamente.</p>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
-                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="document.getElementById('formReporte').submit();" data-bs-dismiss="modal">Sí, generar</button>
-            </div>
-        </div>
-    </div>
-</div>
 
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof flatpickr !== 'undefined') {

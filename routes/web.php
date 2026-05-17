@@ -86,17 +86,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('asigna_promociones/portada/{edicion}', [AsignaPromocionController::class, 'updatePortada'])->name('asigna_promociones.portada.update');
         Route::resource('asigna_promociones', AsignaPromocionController::class);
 
-        // Operaciones de Almacén y Compras
-        Route::resource('compras', CompraController::class);
-        Route::resource('mermas', MermaController::class);
-        Route::resource('lotes', LoteController::class);
-        Route::resource('proveedores', ProveedorController::class);
-        Route::resource('ubicaciones', UbicacionController::class);
-
-        // Catálogos Base
-        Route::resource('editoriales', EditorialController::class);
-        Route::resource('formatos', FormatoController::class);
-        Route::resource('idiomas', IdiomaController::class);
+        // Reportes Generales
+        Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])
+            ->name('compras.reporte.general');
+        Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])
+            ->name('mermas.reporte.general');
+        Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])
+            ->name('lotes.reporte.general');
+        Route::get('/ventas/reporte/general', [VentaController::class, 'reporteGeneral'])
+            ->name('ventas.reporte.general');
 
         // PDFs Individuales
         Route::get('/compras/{id}/pdf', [CompraController::class, 'generarPDF'])
@@ -108,15 +106,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ventas/{id}/pdf', [VentaController::class, 'generarPDF'])
             ->name('ventas.pdf');
 
-        // Reportes Generales
-        Route::get('/compras/reporte/general', [CompraController::class, 'reporteGeneral'])
-            ->name('compras.reporte.general');
-        Route::get('/mermas/reporte/general', [MermaController::class, 'reporteGeneral'])
-            ->name('mermas.reporte.general');
-        Route::get('/lotes/reporte/general', [LoteController::class, 'reporteGeneral'])
-            ->name('lotes.reporte.general');
-        Route::get('/ventas/reporte/general', [VentaController::class, 'reporteGeneral'])
-            ->name('ventas.reporte.general');
+        // Operaciones de Almacén y Compras
+        Route::resource('compras', CompraController::class);
+        Route::resource('mermas', MermaController::class);
+        Route::resource('lotes', LoteController::class);
+        Route::resource('proveedores', ProveedorController::class);
+        Route::resource('ubicaciones', UbicacionController::class);
+
+        // Catálogos Base
+        Route::resource('editoriales', EditorialController::class);
+        Route::resource('formatos', FormatoController::class);
+        Route::resource('idiomas', IdiomaController::class);
     });
 
 
