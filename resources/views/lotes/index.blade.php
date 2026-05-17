@@ -28,12 +28,60 @@
     </div>
     @endif
 
-    <button type="button"
-        class="btn btn-danger mb-3"
-        onclick="if(confirm('¿Generar reporte de lotes?')) window.location.href='{{ route('lotes.reporte.general') }}'">
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px;">
+        <div class="card-body p-4">
+            <form id="formReporte" method="GET" action="{{ route('lotes.reporte.general') }}">
+                <div class="row g-3">
+                    {{-- FECHA --}}
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold" style="color: #4b1c71;">Día</label>
+                        <div class="input-group">
+                            <input type="text" name="fecha" class="form-control selector-fecha-reporte bg-light border-end-0" placeholder="aaaa-mm-dd">
+                            <span class="input-group-text bg-light"><i class="fa-regular fa-calendar" style="color: #7a6a88;"></i></span>
+                        </div>
+                    </div>
 
-        <i class="fa-solid fa-file-pdf"></i> Reporte Lotes
-    </button>
+                    {{-- MES --}}
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold" style="color: #4b1c71;">Mes</label>
+                        <select name="mes" class="form-select bg-light">
+                            <option value="">Seleccione</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+
+                    {{-- AÑO --}}
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold" style="color: #4b1c71;">Año</label>
+                        <select name="anio" class="form-select bg-light">
+                            <option value="">Seleccione</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+
+                    {{-- BOTÓN --}}
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger w-100 fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#modalConfirmarReporte">
+                            <i class="fa-solid fa-file-pdf me-1"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
@@ -249,4 +297,38 @@
 
     @endforeach
 
-    @endsection
+{{-- MODAL CONFIRMAR REPORTE --}}
+<div class="modal fade" id="modalConfirmarReporte" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title bebas fs-4">
+                    <i class="fa-solid fa-file-pdf me-2"></i> Generar Reporte PDF
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="fs-5 mb-1">¿Estás seguro de generar el reporte PDF con los filtros seleccionados?</p>
+                <p class="text-muted small mb-0 mt-2">El documento se descargará automáticamente.</p>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" onclick="document.getElementById('formReporte').submit();" data-bs-dismiss="modal">Sí, generar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr(".selector-fecha-reporte", {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                maxDate: "today",
+                disableMobile: true
+            });
+        }
+    });
+</script>
+@endsection

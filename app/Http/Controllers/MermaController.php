@@ -170,7 +170,11 @@ class MermaController extends Controller
             'lote.edicion.libro',
             'lote.compra.proveedor',
             'usuario.persona',
-        ])->findOrFail($id);
+        ])->find($id);
+
+        if (!$merma) {
+            return redirect()->back()->with('error', 'No se pudo generar el PDF. La merma solicitada no existe.');
+        }
 
         if ($merma->estatus !== 'PROCESADO') {
             return redirect()->back()->with('error', 'Solo se pueden generar PDFs de mermas con estatus PROCESADO.');
@@ -194,6 +198,19 @@ class MermaController extends Controller
 
     public function reporteGeneral(Request $request)
     {
+        // ── Validaciones de servidor (sin depender del navegador) ─────────
+        $request->validate([
+            'fecha' => 'nullable|date',
+            'mes'   => 'nullable|integer|between:1,12',
+            'anio'  => 'nullable|integer|min:2000|max:2100'
+        ], [
+            'fecha.date'    => 'El formato de fecha ingresado no es válido.',
+            'mes.between'   => 'El mes debe estar entre 1 y 12.',
+            'anio.min'      => 'El año debe ser mayor a 2000.',
+            'anio.max'      => 'El año debe ser menor a 2100.',
+            'anio.integer'  => 'El año debe ser un número válido.'
+        ]);
+
         // ── Query base: solo mermas PROCESADAS ────────────────────────────
         $query = Merma::with(['lote.edicion.libro', 'lote.compra.proveedor', 'usuario.persona'])
             ->where('estatus', 'PROCESADO');

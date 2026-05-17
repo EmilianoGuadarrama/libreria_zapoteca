@@ -192,7 +192,11 @@ class VentaController extends Controller
         $venta = Venta::with([
             'usuario.persona',
             'detallesVentas.lote.edicion.libro',
-        ])->findOrFail($id);
+        ])->find($id);
+
+        if (!$venta) {
+            return redirect()->back()->with('error', 'No se pudo generar el PDF. La venta solicitada no existe.');
+        }
 
         // ── Nombre del usuario que realizó la venta ───────────────────────
         $persona   = $venta->usuario->persona ?? null;
@@ -221,6 +225,19 @@ class VentaController extends Controller
 
     public function reporteGeneral(Request $request)
     {
+        // ── Validaciones de servidor (sin depender del navegador) ─────────
+        $request->validate([
+            'fecha' => 'nullable|date',
+            'mes'   => 'nullable|integer|between:1,12',
+            'anio'  => 'nullable|integer|min:2000|max:2100'
+        ], [
+            'fecha.date'    => 'El formato de fecha ingresado no es válido.',
+            'mes.between'   => 'El mes debe estar entre 1 y 12.',
+            'anio.min'      => 'El año debe ser mayor a 2000.',
+            'anio.max'      => 'El año debe ser menor a 2100.',
+            'anio.integer'  => 'El año debe ser un número válido.'
+        ]);
+
         // ── Query base con relaciones ─────────────────────────────────────
         $query = Venta::with('usuario.persona');
 
