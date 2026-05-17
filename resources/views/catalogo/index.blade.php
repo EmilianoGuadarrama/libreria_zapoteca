@@ -210,9 +210,8 @@
         <div class="row g-4">
             @foreach($ediciones as $edicion)
                 @php
-                    // LÓGICA DEL SISTEMA: Como subiste las fotos desde el formulario, Laravel las guardó en 'storage'
-                    $portadaFinal = $edicion->edicion_portada ?? $edicion->libro_portada;
-                    $portada = $portadaFinal ? asset('storage/' . $portadaFinal) : null;
+                    // LA MAGIA ESTÁ AQUÍ: Leemos DIRECTO de la base de datos a la carpeta Storage, tal cual se guardó.
+                    $portada = !empty($edicion->edicion_portada) ? asset('storage/' . $edicion->edicion_portada) : null;
                     
                     $precio = floatval($edicion->precio_venta);
                     $descuento = floatval($edicion->promo_descuento ?? 0);
@@ -359,5 +358,9 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Tip súper importante: Si al guardar ves que sale un icono de imagen rota en lugar de la foto, -->
+<!-- abre la terminal de VS Code y corre: php artisan storage:link -->
+
 </body>
 </html>

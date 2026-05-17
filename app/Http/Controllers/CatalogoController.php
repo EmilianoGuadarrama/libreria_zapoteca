@@ -41,6 +41,7 @@ class CatalogoController extends Controller
                 'ediciones.numero_paginas',
                 'ediciones.precio_venta',
                 'ediciones.existencias',
+                // SACAMOS DIRECTAMENTE LA PORTADA DE LA TABLA EDICIONES
                 'ediciones.portada as edicion_portada',
                 'ediciones.alt_imagen',
                 'libros.id as libro_id',
@@ -49,8 +50,6 @@ class CatalogoController extends Controller
                 'libros.anio_publicacion_original',
                 'libros.clasificacion_id',
                 'libros.genero_principal_id',
-                // REGRESAMOS LA PORTADA DEL LIBRO PARA EL FALLBACK
-                'libros.portada as libro_portada',
                 'clasificaciones.nombre as clasificacion_nombre',
                 'generos.nombre as genero_nombre',
                 'editoriales.nombre as editorial_nombre',
@@ -79,7 +78,7 @@ class CatalogoController extends Controller
 
         $ediciones = $query->orderBy('libros.titulo', 'asc')->get();
 
-        // Filtro para eliminar duplicados visuales en el catálogo
+        // Filtro para eliminar duplicados visuales
         $ediciones = $ediciones->unique(function ($item) {
             return $item->libro_id . '-' . $item->numero_edicion . '-' . $item->formato_nombre;
         })->values();
