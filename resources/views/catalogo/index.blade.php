@@ -210,8 +210,9 @@
         <div class="row g-4">
             @foreach($ediciones as $edicion)
                 @php
-                    // ¡AQUÍ ESTÁ LA SOLUCIÓN! Le regresamos la ruta "storage/" para que coincida con el formulario de subir imágenes.
-                    $portada = $edicion->edicion_portada ? asset('storage/' . $edicion->edicion_portada) : null;
+                    // LÓGICA DEL SISTEMA: Como subiste las fotos desde el formulario, Laravel las guardó en 'storage'
+                    $portadaFinal = $edicion->edicion_portada ?? $edicion->libro_portada;
+                    $portada = $portadaFinal ? asset('storage/' . $portadaFinal) : null;
                     
                     $precio = floatval($edicion->precio_venta);
                     $descuento = floatval($edicion->promo_descuento ?? 0);
