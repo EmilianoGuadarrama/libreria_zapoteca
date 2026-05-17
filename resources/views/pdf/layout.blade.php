@@ -293,7 +293,13 @@
             <tr>
                 {{-- Logo --}}
                 <td class="pdf-header-logo-cell">
-                    <img src="{{ public_path('img/logo.png') }}" alt="Logo Librería Zapotec">
+                {{-- Logo: usa public_path() con barras normales (DomPDF en Windows) --}}
+                @php $logoPath = str_replace('\\', '/', public_path('img/logo.png')); @endphp
+                @if(file_exists($logoPath))
+                    <img src="{{ $logoPath }}" alt="Logo Librería Zapotec">
+                @else
+                    <div style="width:60px;height:60px;background:#ffffff;border-radius:6px;display:inline-block;"></div>
+                @endif
                 </td>
 
                 {{-- Nombre y módulo --}}
