@@ -4,28 +4,36 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Ubicacion;
+use App\Models\Edicion;
 
 class UbicacionController extends Controller
 {
     public function index()
     {
-        $ubicaciones = DB::table('ubicaciones')
-            ->leftJoin('generos', 'ubicaciones.genero_id', '=', 'generos.id')
-            ->select(
-                'ubicaciones.*',
-                'generos.nombre as nombre_genero'
-            )
-            ->whereNull('ubicaciones.deleted_at')
-            ->orderBy('ubicaciones.codigo', 'asc')
-            ->paginate(10)
-            ->withQueryString();
+        $ubicaciones = Ubicacion::with([
+                'genero',
+                'lotes.edicion.libro.autores',
+                'lotes.edicion.libro.subgeneros',
+                'lotes.edicion.libro.genero',
+                'lotes.edicion.editorial',
+            ])
+            ->orderBy('codigo', 'asc')
+            ->get();
 
         $generosCatalogo = DB::table('generos')
             ->whereNull('deleted_at')
             ->orderBy('nombre', 'asc')
             ->get();
 
-        return view('ubicaciones.index', compact('ubicaciones', 'generosCatalogo'));
+        // Ediciones con al menos un lote (para selector de asignación)
+        $ediciones = Edicion::with(['libro', 'editorial'])
+            ->whereHas('libro')
+            ->whereHas('lotes')
+            ->orderBy('isbn', 'asc')
+            ->get();
+
+        return view('ubicaciones.index', compact('ubicaciones', 'generosCatalogo', 'ediciones'));
     }
 
     public function create()
@@ -40,6 +48,8 @@ class UbicacionController extends Controller
             'estante' => 'required|string|max:10',
             'nivel' => 'required|string|max:10',
             'genero_id' => 'required|integer|exists:generos,id',
+            'edicion_ids' => 'nullable|array',
+            'edicion_ids.*' => 'integer|exists:ediciones,id',
         ]);
 
         $pasillo = trim($request->pasillo);
@@ -58,6 +68,8 @@ class UbicacionController extends Controller
                 ->withInput();
         }
 
+        $ubicacionId = null;
+
         if ($existente && !is_null($existente->deleted_at)) {
             DB::table('ubicaciones')
                 ->where('id', $existente->id)
@@ -66,21 +78,32 @@ class UbicacionController extends Controller
                     'genero_id' => $request->genero_id,
                     'updated_at' => now(),
                 ]);
-
-            return redirect()->route('ubicaciones.index')
-                ->with('status', 'La ubicación ya existía y fue restaurada correctamente.');
+            $ubicacionId = $existente->id;
+        } else {
+            $ubicacionId = DB::table('ubicaciones')->insertGetId([
+                'pasillo' => $pasillo,
+                'estante' => $estante,
+                'nivel' => $nivel,
+                'genero_id' => $request->genero_id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
-        DB::table('ubicaciones')->insert([
-            'pasillo' => $pasillo,
-            'estante' => $estante,
-            'nivel' => $nivel,
-            'genero_id' => $request->genero_id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Asignar ediciones (mover lotes a esta ubicación)
+        $edicionIds = $request->input('edicion_ids', []);
+        if (!empty($edicionIds) && $ubicacionId) {
+            DB::table('lotes')
+                ->whereIn('edicion_id', $edicionIds)
+                ->whereNull('deleted_at')
+                ->update(['ubicacion_id' => $ubicacionId]);
+        }
 
-        return redirect()->route('ubicaciones.index')->with('status', 'Ubicación registrada correctamente.');
+        $msg = ($existente && !is_null($existente->deleted_at))
+            ? 'La ubicación ya existía y fue restaurada correctamente.'
+            : 'Ubicación registrada correctamente.';
+
+        return redirect()->route('ubicaciones.index')->with('status', $msg);
     }
 
     public function show(string $id)
@@ -100,6 +123,8 @@ class UbicacionController extends Controller
             'estante' => 'required|string|max:10',
             'nivel' => 'required|string|max:10',
             'genero_id' => 'required|integer|exists:generos,id',
+            'edicion_ids' => 'nullable|array',
+            'edicion_ids.*' => 'integer|exists:ediciones,id',
         ]);
 
         $pasillo = trim($request->pasillo);
@@ -129,6 +154,16 @@ class UbicacionController extends Controller
                 'genero_id' => $request->genero_id,
                 'updated_at' => now(),
             ]);
+
+        // Asignar lotes de ediciones seleccionadas a esta ubicación
+        // Nota: NO se hace update a null porque LOTES.UBICACION_ID es NOT NULL en Oracle
+        $edicionIds = $request->input('edicion_ids', []);
+        if (!empty($edicionIds)) {
+            DB::table('lotes')
+                ->whereIn('edicion_id', $edicionIds)
+                ->whereNull('deleted_at')
+                ->update(['ubicacion_id' => $id]);
+        }
 
         return redirect()->route('ubicaciones.index')->with('status', 'Ubicación actualizada correctamente.');
     }

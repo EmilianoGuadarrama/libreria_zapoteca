@@ -34,15 +34,91 @@
         <i class="fa-solid fa-file-pdf"></i> Reporte Mermas
     </button>
 
+    {{-- ── RESUMEN FINANCIERO ────────────────────────────────────────── --}}
+    <div class="row g-3 mb-4">
+        {{-- Total registrado --}}
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; border-left: 5px solid #4b1c71 !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:52px; height:52px; background: linear-gradient(135deg, #4b1c71, #7f4ca5);">
+                        <i class="fa-solid fa-coins text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-muted small fw-semibold">Total registrado</p>
+                        <h4 class="mb-0 fw-bold" style="color: #4b1c71;">${{ number_format($totalMermas, 2) }}</h4>
+                        <small class="text-muted">Valor total en mermas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Monto recuperado --}}
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; border-left: 5px solid #198754 !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:52px; height:52px; background: linear-gradient(135deg, #198754, #28a870);">
+                        <i class="fa-solid fa-hand-holding-dollar text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-muted small fw-semibold">Monto recuperado</p>
+                        <h4 class="mb-0 fw-bold text-success">${{ number_format($totalRecuperado, 2) }}</h4>
+                        <small class="text-muted">Devolucion a proveedor</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Monto perdido --}}
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; border-left: 5px solid #dc3545 !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:52px; height:52px; background: linear-gradient(135deg, #dc3545, #e8606d);">
+                        <i class="fa-solid fa-fire-flame-curved text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-muted small fw-semibold">Monto perdido</p>
+                        <h4 class="mb-0 fw-bold text-danger">${{ number_format($totalPerdido, 2) }}</h4>
+                        <small class="text-muted">Destrucción</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Balance neto --}}
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; border-left: 5px solid {{ $balanceNeto >= 0 ? '#198754' : '#dc3545' }} !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:52px; height:52px; background: linear-gradient(135deg, {{ $balanceNeto >= 0 ? '#198754, #28a870' : '#dc3545, #e8606d' }});">
+                        <i class="fa-solid fa-scale-balanced text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <p class="mb-0 text-muted small fw-semibold">Balance neto</p>
+                        <h4 class="mb-0 fw-bold {{ $balanceNeto >= 0 ? 'text-success' : 'text-danger' }}">
+                            {{ $balanceNeto >= 0 ? '' : '-' }}${{ number_format(abs($balanceNeto), 2) }}
+                        </h4>
+                        <small class="text-muted">Recuperado − Perdido</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-bordered table-striped mi-datatable" style="width:100%">
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>Proveedor</th>
                     <th>Lote</th>
                     <th>Tipo de Merma</th>
-                    <th>Fecha de Reporte</th>
                     <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Total Merma</th>
+                    <th>Monto Recuperado</th>
+                    <th>Monto Perdido</th>
                     <th>Usuario</th>
                     <th>Destino</th>
                     <th>Estatus</th>
@@ -51,15 +127,32 @@
             </thead>
             <tbody>
                 @foreach($mermas as $merma)
+                @php
+                    $persona = $merma->usuario->persona ?? null;
+                    $nombreUsuario = $persona ? trim($persona->nombre . ' ' . $persona->apellido_paterno) : ($merma->usuario->correo ?? 'N/A');
+                @endphp
                 <tr>
                     <td>{{ $loop->iteration }}</td>
-                    <td>{{ $merma->lote_id }}</td>
+                    <td>{{ $merma->lote->compra->proveedor->nombre ?? 'Sin proveedor' }}</td>
+                    <td>
+                        Lote #{{ $merma->lote_id }}<br>
+                        <small class="text-muted">{{ $merma->lote->edicion->libro->titulo ?? 'N/A' }}</small>
+                    </td>
                     <td class="fw-semibold">{{ $merma->tipo_merma }}</td>
-                    <td>{{ $merma->fecha_reporte }}</td>
                     <td>{{ $merma->cantidad }}</td>
-                    <td>{{ $merma->usuario_id }}</td>
-                    <td>{{ $merma->destino }}</td>
-                    <td>{{ $merma->estatus }}</td>
+                    <td>${{ number_format($merma->precio_unitario, 2) }}</td>
+                    <td class="fw-bold">${{ number_format($merma->total_merma, 2) }}</td>
+                    <td class="text-success fw-bold">${{ number_format($merma->monto_recuperado, 2) }}</td>
+                    <td class="text-danger fw-bold">${{ number_format($merma->monto_perdido, 2) }}</td>
+                    <td>{{ $nombreUsuario }}</td>
+                    <td>{{ str_replace('_', ' ', $merma->destino) }}</td>
+                    <td>
+                        @if($merma->estatus === 'PROCESADO')
+                            <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill border border-success-subtle">PROCESADO</span>
+                        @else
+                            <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill border border-warning-subtle">PENDIENTE</span>
+                        @endif
+                    </td>
                     <td class="text-end">
                         <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-3"
                             data-bs-toggle="modal" data-bs-target="#modalEditMerma{{ $merma->id }}"
@@ -105,12 +198,19 @@
                 <div class="modal-body p-4">
                     <div class="row g-3">
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Lote ID</label>
-                            <input type="number" name="lote_id" class="form-control" min="1" required>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Lote</label>
+                            <select name="lote_id" class="form-select select2" required>
+                                <option value="">Seleccione un lote...</option>
+                                @foreach($lotesDisponibles as $loteDisp)
+                                <option value="{{ $loteDisp->id }}">
+                                    Lote #{{ $loteDisp->id }} - {{ $loteDisp->edicion->libro->titulo ?? 'N/A' }} - Proveedor: {{ $loteDisp->compra->proveedor->nombre ?? 'N/A' }} - Precio: ${{ number_format($loteDisp->edicion->precio_venta ?? 0, 2) }}
+                                </option>
+                                @endforeach
+                            </select>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Tipo de Merma</label>
                             <select name="tipo_merma" class="form-select" required>
                                 <option value="">Seleccione</option>
@@ -123,7 +223,8 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Fecha de Reporte</label>
-                            <input type="datetime-local" name="fecha_reporte" class="form-control" required>
+                            <input type="text" name="fecha_reporte" class="form-control selector-fecha-merma" placeholder="Seleccione fecha y hora">
+                            <small class="text-muted">Si se deja vacío, se usará la fecha actual.</small>
                         </div>
 
                         <div class="col-md-6">
@@ -133,12 +234,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Usuario</label>
-                            <select name="usuario_id" class="form-select" required>
-                                <option value="">Seleccione</option>
-                                @foreach($usuariosCatalogo as $usuario)
-                                <option value="{{ $usuario->id }}">{{ $usuario->correo }}</option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control bg-light" value="{{ auth()->user()->persona ? trim(auth()->user()->persona->nombre . ' ' . auth()->user()->persona->apellido_paterno) : auth()->user()->correo }}" readonly>
                         </div>
 
                         <div class="col-md-6">
@@ -190,12 +286,19 @@
                 <div class="modal-body p-4">
                     <div class="row g-3">
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Lote ID</label>
-                            <input type="number" name="lote_id" class="form-control" value="{{ $merma->lote_id }}" min="1" required>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Lote</label>
+                            <select name="lote_id" class="form-select select2" required>
+                                <option value="">Seleccione un lote...</option>
+                                @foreach($lotesDisponibles as $loteDisp)
+                                <option value="{{ $loteDisp->id }}" {{ $merma->lote_id == $loteDisp->id ? 'selected' : '' }}>
+                                    Lote #{{ $loteDisp->id }} - {{ $loteDisp->edicion->libro->titulo ?? 'N/A' }} - Proveedor: {{ $loteDisp->compra->proveedor->nombre ?? 'N/A' }} - Precio: ${{ number_format($loteDisp->edicion->precio_venta ?? 0, 2) }}
+                                </option>
+                                @endforeach
+                            </select>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Tipo de Merma</label>
                             <select name="tipo_merma" class="form-select" required>
                                 <option value="Portada dañada" {{ $merma->tipo_merma == 'Portada dañada' ? 'selected' : '' }}>Portada dañada</option>
@@ -207,7 +310,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Fecha de Reporte</label>
-                            <input type="datetime-local" name="fecha_reporte" class="form-control" value="{{ \Carbon\Carbon::parse($merma->fecha_reporte)->format('Y-m-d\TH:i') }}" required>
+                            <input type="text" name="fecha_reporte" class="form-control selector-fecha-merma" value="{{ $merma->fecha_reporte ? $merma->fecha_reporte->format('Y-m-d H:i') : '' }}" required>
                         </div>
 
                         <div class="col-md-6">
@@ -216,15 +319,8 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-bold" style="color: #4b1c71;">Usuario</label>
-                            <select name="usuario_id" class="form-select" required>
-                                <option value="">Seleccione</option>
-                                @foreach($usuariosCatalogo as $usuario)
-                                <option value="{{ $usuario->id }}" {{ $merma->usuario_id == $usuario->id ? 'selected' : '' }}>
-                                    {{ $usuario->correo }}
-                                </option>
-                                @endforeach
-                            </select>
+                            <label class="form-label fw-bold" style="color: #4b1c71;">Usuario que Reportó</label>
+                            <input type="text" class="form-control bg-light" value="{{ $nombreUsuario }}" readonly>
                         </div>
 
                         <div class="col-md-6">
@@ -283,4 +379,19 @@
     </div>
 </div>
 @endforeach
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr(".selector-fecha-merma", {
+            locale: "es",
+            dateFormat: "Y-m-d H:i",
+            enableTime: true,
+            time_24hr: true,
+            disableMobile: true,
+            allowInput: true
+        });
+    }
+});
+</script>
 @endsection

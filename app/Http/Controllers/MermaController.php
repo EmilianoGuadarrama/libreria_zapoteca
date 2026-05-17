@@ -7,18 +7,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Merma;
-
+use App\Models\Lote;
 
 class MermaController extends Controller
 {
     public function index()
     {
-        $mermas = DB::table('mermas')
-            ->select('mermas.*')
-            ->whereNull('mermas.deleted_at')
-            ->orderBy('mermas.id', 'asc')
-            ->paginate(10)
-            ->withQueryString();
+        $mermas = Merma::with([
+                'lote.edicion.libro',
+                'lote.edicion.editorial',
+                'lote.compra.proveedor',
+                'usuario.persona',
+            ])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // ── Resumen financiero (calculado desde accessors) ────────────
+        $totalRecuperado = $mermas->sum(fn($m) => $m->monto_recuperado);
+        $totalPerdido    = $mermas->sum(fn($m) => $m->monto_perdido);
+        $totalMermas     = $mermas->sum(fn($m) => $m->total_merma);
+        $balanceNeto     = $totalRecuperado - $totalPerdido;
 
         $usuariosCatalogo = DB::table('usuarios')
             ->select('id', 'correo')
@@ -26,7 +34,15 @@ class MermaController extends Controller
             ->orderBy('correo', 'asc')
             ->get();
 
-        return view('mermas.index', compact('mermas', 'usuariosCatalogo'));
+        $lotesDisponibles = Lote::with(['edicion.libro', 'compra.proveedor'])
+            ->whereNull('deleted_at')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return view('mermas.index', compact(
+            'mermas', 'usuariosCatalogo', 'lotesDisponibles',
+            'totalRecuperado', 'totalPerdido', 'totalMermas', 'balanceNeto'
+        ));
     }
 
     public function create()
@@ -39,9 +55,8 @@ class MermaController extends Controller
         $request->validate([
             'lote_id' => 'required|integer|exists:lotes,id',
             'tipo_merma' => 'required|in:Portada dañada,Hojas rasgadas,Hojas arrugadas,Faltan hojas',
-            'fecha_reporte' => 'required|date',
+            'fecha_reporte' => 'nullable|date',
             'cantidad' => 'required|integer|min:1',
-            'usuario_id' => 'required|integer|exists:usuarios,id',
             'destino' => 'required|in:Devolucion_Proveedor,Destruccion',
             'estatus' => 'required|in:PENDIENTE,PROCESADO',
         ], [
@@ -50,22 +65,33 @@ class MermaController extends Controller
             'estatus.in' => 'El estatus no es válido.',
         ]);
 
-        $fechaReporte = Carbon::parse($request->fecha_reporte)->format('Y-m-d H:i:s');
+        $fechaReporte = $request->fecha_reporte 
+            ? Carbon::parse($request->fecha_reporte)->format('Y-m-d H:i:s') 
+            : now();
 
-        DB::statement("
-            insert into mermas
-            (lote_id, tipo_merma, fecha_reporte, cantidad, usuario_id, destino, estatus, created_at, updated_at)
-            values
-            (:lote_id, :tipo_merma, to_timestamp(:fecha_reporte, 'YYYY-MM-DD HH24:MI:SS'), :cantidad, :usuario_id, :destino, :estatus, current_timestamp, current_timestamp)
-        ", [
-            'lote_id' => $request->lote_id,
+        $lote = Lote::with('edicion')->findOrFail($request->lote_id);
+        $cantidad = abs((int) $request->cantidad);
+        $usuarioId = auth()->id() ?? 1;
+
+        $merma = Merma::create([
+            'lote_id' => $lote->id,
             'tipo_merma' => $request->tipo_merma,
             'fecha_reporte' => $fechaReporte,
-            'cantidad' => $request->cantidad,
-            'usuario_id' => $request->usuario_id,
+            'cantidad' => $cantidad,
+            'usuario_id' => $usuarioId,
             'destino' => $request->destino,
             'estatus' => $request->estatus,
         ]);
+
+        if ($merma->estatus === 'PROCESADO') {
+            $lote->cantidad -= $cantidad;
+            $lote->save();
+
+            if ($lote->edicion) {
+                $lote->edicion->existencias -= $cantidad;
+                $lote->edicion->save();
+            }
+        }
 
         return redirect()->route('mermas.index')->with('status', 'Merma registrada correctamente.');
     }
@@ -87,7 +113,6 @@ class MermaController extends Controller
             'tipo_merma' => 'required|in:Portada dañada,Hojas rasgadas,Hojas arrugadas,Faltan hojas',
             'fecha_reporte' => 'required|date',
             'cantidad' => 'required|integer|min:1',
-            'usuario_id' => 'required|integer|exists:usuarios,id',
             'destino' => 'required|in:Devolucion_Proveedor,Destruccion',
             'estatus' => 'required|in:PENDIENTE,PROCESADO',
         ], [
@@ -96,29 +121,31 @@ class MermaController extends Controller
             'estatus.in' => 'El estatus no es válido.',
         ]);
 
-        $fechaReporte = Carbon::parse($request->fecha_reporte)->format('Y-m-d H:i:s');
+        $merma = Merma::findOrFail($id);
+        $estatusAnterior = $merma->estatus;
 
-        DB::statement("
-            update mermas
-            set lote_id = :lote_id,
-                tipo_merma = :tipo_merma,
-                fecha_reporte = to_timestamp(:fecha_reporte, 'YYYY-MM-DD HH24:MI:SS'),
-                cantidad = :cantidad,
-                usuario_id = :usuario_id,
-                destino = :destino,
-                estatus = :estatus,
-                updated_at = current_timestamp
-            where id = :id
-        ", [
-            'lote_id' => $request->lote_id,
+        $fechaReporte = Carbon::parse($request->fecha_reporte)->format('Y-m-d H:i:s');
+        $lote = Lote::with('edicion')->findOrFail($request->lote_id);
+        $cantidad = abs((int) $request->cantidad);
+
+        $merma->update([
+            'lote_id' => $lote->id,
             'tipo_merma' => $request->tipo_merma,
             'fecha_reporte' => $fechaReporte,
-            'cantidad' => $request->cantidad,
-            'usuario_id' => $request->usuario_id,
+            'cantidad' => $cantidad,
             'destino' => $request->destino,
             'estatus' => $request->estatus,
-            'id' => $id,
         ]);
+
+        if ($estatusAnterior !== 'PROCESADO' && $merma->estatus === 'PROCESADO') {
+            $lote->cantidad -= $cantidad;
+            $lote->save();
+
+            if ($lote->edicion) {
+                $lote->edicion->existencias -= $cantidad;
+                $lote->edicion->save();
+            }
+        }
 
         return redirect()->route('mermas.index')->with('status', 'Merma actualizada correctamente.');
     }
@@ -141,6 +168,7 @@ class MermaController extends Controller
         // ── Solo mermas PROCESADAS ───────────────────────────────────────────────
         $merma = Merma::with([
             'lote.edicion.libro',
+            'lote.compra.proveedor',
             'usuario.persona',
         ])->findOrFail($id);
 
@@ -167,7 +195,7 @@ class MermaController extends Controller
     public function reporteGeneral(Request $request)
     {
         // ── Query base: solo mermas PROCESADAS ────────────────────────────
-        $query = Merma::with(['lote.edicion.libro', 'usuario.persona'])
+        $query = Merma::with(['lote.edicion.libro', 'lote.compra.proveedor', 'usuario.persona'])
             ->where('estatus', 'PROCESADO');
 
         // ── Filtros Oracle-compatibles sobre fecha_reporte ───────────────────
@@ -196,6 +224,12 @@ class MermaController extends Controller
         $maxUnidades    = $mermas->max('cantidad');
         $minUnidades    = $mermas->min('cantidad');
 
+        // ── Resumen financiero (calculado desde accessors) ────────────
+        $totalRecuperadoPdf = $mermas->sum(fn($m) => $m->monto_recuperado);
+        $totalPerdidoPdf    = $mermas->sum(fn($m) => $m->monto_perdido);
+        $totalMermaPdf      = $mermas->sum(fn($m) => $m->total_merma);
+        $balanceNetoPdf     = $totalRecuperadoPdf - $totalPerdidoPdf;
+
         // ── Agrupaciones ────────────────────────────────────────────────────
         $porTipo    = $mermas->groupBy('tipo_merma')->map->count();
         $porDestino = $mermas->groupBy('destino')->map->count();
@@ -213,6 +247,10 @@ class MermaController extends Controller
                 'libro'        => $m->lote->edicion->libro->titulo ?? 'N/A',
                 'tipo'         => $m->tipo_merma,
                 'cantidad'     => $m->cantidad,
+                'precio_unitario' => $m->precio_unitario,
+                'total_merma'  => $m->total_merma,
+                'monto_recuperado' => $m->monto_recuperado,
+                'monto_perdido' => $m->monto_perdido,
                 'destino'      => $m->destino,
                 'usuario'      => $usuario,
                 'fecha'        => $m->fecha_reporte
@@ -257,14 +295,18 @@ class MermaController extends Controller
             'titulo'        => $titulo,
             'datos'         => $datos,
             'totalMermas'   => $totalMermas,
-            'totalUnidades' => $totalUnidades,
-            'promedioUnid'  => $promedioUnid,
-            'maxUnidades'   => $maxUnidades,
-            'minUnidades'   => $minUnidades,
-            'porTipo'       => $porTipo,
-            'porDestino'    => $porDestino,
-            'chartBase64'   => $chartBase64,
-            'generadoPor'   => auth()->user()->correo ?? 'Sistema',
+            'totalUnidades'     => $totalUnidades,
+            'promedioUnid'      => $promedioUnid,
+            'maxUnidades'       => $maxUnidades,
+            'minUnidades'       => $minUnidades,
+            'totalRecuperado'   => $totalRecuperadoPdf,
+            'totalPerdido'      => $totalPerdidoPdf,
+            'totalMermaFinanciero' => $totalMermaPdf,
+            'balanceNeto'       => $balanceNetoPdf,
+            'porTipo'           => $porTipo,
+            'porDestino'        => $porDestino,
+            'chartBase64'       => $chartBase64,
+            'generadoPor'       => auth()->user()->correo ?? 'Sistema',
         ])->setPaper('letter', 'landscape');
 
         return $pdf->download('reporte_general_mermas.pdf');

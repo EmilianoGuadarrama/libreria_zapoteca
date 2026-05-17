@@ -48,4 +48,34 @@ class Merma extends Model
     {
         return $this->belongsTo(User::class, 'usuario_id');
     }
+
+    // ──────────────────────────────────────────────
+    // ACCESSORS
+    // ──────────────────────────────────────────────
+
+    public function getPrecioUnitarioAttribute()
+    {
+        return $this->lote && $this->lote->edicion
+            ? (float) $this->lote->edicion->precio_venta
+            : 0;
+    }
+
+    public function getTotalMermaAttribute()
+    {
+        return abs((int) $this->cantidad) * $this->precio_unitario;
+    }
+
+    public function getMontoRecuperadoAttribute()
+    {
+        return $this->destino === 'Devolucion_Proveedor'
+            ? $this->total_merma
+            : 0;
+    }
+
+    public function getMontoPerdidoAttribute()
+    {
+        return $this->destino === 'Destruccion'
+            ? $this->total_merma
+            : 0;
+    }
 }

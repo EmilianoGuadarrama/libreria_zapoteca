@@ -91,9 +91,11 @@
             <th class="text-left">Libro</th>
             <th>Tipo</th>
             <th>Cantidad</th>
+            <th>Total Merma</th>
+            <th>Recuperado</th>
+            <th>Perdido</th>
             <th>Destino</th>
             <th>Reportado por</th>
-            <th>Fecha</th>
         </tr>
     </thead>
     <tbody>
@@ -101,12 +103,14 @@
         <tr>
             <td>{{ $i + 1 }}</td>
             <td class="fw-bold text-purple">{{ $fila['lote_codigo'] }}</td>
-            <td class="text-left">{{ $fila['libro'] }}</td>
+            <td class="text-left">{{ Str::limit($fila['libro'], 15) }}</td>
             <td>{{ $fila['tipo'] }}</td>
             <td>{{ $fila['cantidad'] }}</td>
+            <td>${{ number_format($fila['total_merma'], 2) }}</td>
+            <td class="text-success">${{ number_format($fila['monto_recuperado'], 2) }}</td>
+            <td class="text-danger">${{ number_format($fila['monto_perdido'], 2) }}</td>
             <td>{{ str_replace('_', ' ', $fila['destino']) }}</td>
-            <td>{{ $fila['usuario'] }}</td>
-            <td>{{ $fila['fecha'] }}</td>
+            <td>{{ Str::limit($fila['usuario'], 15) }}</td>
         </tr>
         @endforeach
     </tbody>
@@ -124,6 +128,31 @@
         <td style="background-color:#4b1c71; color:#fff; padding:8px;">TOTAL UNIDADES:</td>
         <td style="background-color:#4b1c71; color:#fff; padding:8px; font-size:13px;">
             {{ $totalUnidades }} uds.
+        </td>
+    </tr>
+</table>
+
+{{-- ── RESUMEN FINANCIERO ─────────────────────────────────────────── --}}
+<p class="section-title" style="margin-top:18px;">Resumen Financiero</p>
+<table class="stats-grid">
+    <tr>
+        <td>
+            <span class="stat-value" style="color:#4b1c71;">${{ number_format($totalMermaFinanciero, 2) }}</span>
+            <span class="stat-label">Total registrado</span>
+        </td>
+        <td>
+            <span class="stat-value" style="color:#198754;">${{ number_format($totalRecuperado, 2) }}</span>
+            <span class="stat-label">Monto recuperado</span>
+        </td>
+        <td>
+            <span class="stat-value" style="color:#dc3545;">${{ number_format($totalPerdido, 2) }}</span>
+            <span class="stat-label">Monto perdido</span>
+        </td>
+        <td>
+            <span class="stat-value" style="color:{{ $balanceNeto >= 0 ? '#198754' : '#dc3545' }};">
+                {{ $balanceNeto >= 0 ? '' : '-' }}${{ number_format(abs($balanceNeto), 2) }}
+            </span>
+            <span class="stat-label">Balance neto</span>
         </td>
     </tr>
 </table>

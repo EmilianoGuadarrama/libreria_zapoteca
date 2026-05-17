@@ -22,8 +22,12 @@
             <td>{{ $merma->lote->edicion->libro->titulo ?? 'N/A' }}</td>
         </tr>
         <tr>
+            <td class="info-label">Proveedor:</td>
+            <td>{{ $merma->lote->compra->proveedor->nombre ?? 'N/A' }}</td>
             <td class="info-label">Tipo de Merma:</td>
             <td>{{ $merma->tipo_merma }}</td>
+        </tr>
+        <tr>
             <td class="info-label">Destino:</td>
             <td>{{ str_replace('_', ' ', $merma->destino) }}</td>
         </tr>
@@ -96,6 +100,22 @@
         <tr>
             <td class="text-left fw-bold">Cantidad</td>
             <td>{{ $merma->cantidad }} unidades</td>
+        </tr>
+        <tr>
+            <td class="text-left fw-bold">Precio Unitario</td>
+            <td>${{ number_format($merma->precio_unitario, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="text-left fw-bold">Total Merma</td>
+            <td class="fw-bold">${{ number_format($merma->total_merma, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="text-left fw-bold">Monto Recuperado</td>
+            <td class="text-success fw-bold">${{ number_format($merma->monto_recuperado, 2) }}</td>
+        </tr>
+        <tr>
+            <td class="text-left fw-bold">Monto Perdido</td>
+            <td class="text-danger fw-bold">${{ number_format($merma->monto_perdido, 2) }}</td>
         </tr>
         <tr>
             <td class="text-left fw-bold">Destino</td>
