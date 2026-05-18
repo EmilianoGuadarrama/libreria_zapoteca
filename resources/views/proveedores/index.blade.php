@@ -88,12 +88,11 @@
                         <button type="button" class="btn btn-link p-0 text-decoration-none fs-5 me-2" data-bs-toggle="modal" data-bs-target="#editModal{{ $proveedor->id }}" title="Editar Proveedor">
                             <i class="fa-solid fa-pen-to-square" style="color: {{ $datosIncompletos ? '#dc3545' : '#4b1c71' }};"></i>
                         </button>
-                        <form action="{{ route('proveedores.destroy', $proveedor->id) }}" method="post" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-link p-0 text-decoration-none fs-5" onclick="return confirm('¿Estás seguro de eliminar este proveedor?')" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar Proveedor">
-                                <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
-                            </button>
-                        </form>
+                        
+                        <!-- NUEVO BOTÓN QUE ABRE EL MODAL DE ELIMINACIÓN -->
+                        <button type="button" class="btn btn-link p-0 text-decoration-none fs-5" data-bs-toggle="modal" data-bs-target="#modalDelete{{ $proveedor->id }}" title="Eliminar Proveedor">
+                            <i class="fa-regular fa-trash-can" style="color: rgb(0, 0, 0);"></i>
+                        </button>
                     </td>
                 </tr>
             @endforeach
@@ -253,6 +252,31 @@
                                 <button type="submit" class="btn text-white fw-bold px-4" style="border-radius: 10px; background: linear-gradient(180deg, #7f4ca5 0%, #4b1c71 100%); border: none;">Guardar Cambios</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL DE ELIMINAR (NUEVO ESTILO) -->
+            <div class="modal fade" id="modalDelete{{ $proveedor->id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                        <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="modal-title bebas fs-4" style="text-transform: uppercase;">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Eliminación
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4 text-center">
+                            <p class="fs-5 mb-0 mt-2">¿Estás seguro de eliminar a <br><strong>{{ $proveedor->empresa ?? 'este proveedor' }}</strong>?</p>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                            <form action="{{ route('proveedores.destroy', $proveedor->id) }}" method="post" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

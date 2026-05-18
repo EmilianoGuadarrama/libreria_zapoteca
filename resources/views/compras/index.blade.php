@@ -176,7 +176,8 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold" style="color: #4b1c71;">Fecha Factura:</label>
-                            <input type="date" name="fecha_compra" class="form-control rounded-3 bg-light" value="{{ date('Y-m-d') }}" required>
+                            <!-- SE CAMBIÓ A TYPE TEXT Y SE LE AÑADIÓ LA CLASE PARA ACTIVAR FLATPICKR -->
+                            <input type="text" name="fecha_compra" class="form-control selector-fecha-compra rounded-3 bg-light" value="{{ date('Y-m-d') }}" required>
                         </div>
                     </div>
 
@@ -423,6 +424,14 @@
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof flatpickr !== 'undefined') {
             flatpickr(".selector-fecha-reporte", {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                maxDate: "today",
+                disableMobile: true
+            });
+
+            // SE AGREGÓ LA INICIALIZACIÓN PARA EL CALENDARIO DEL MODAL DE COMPRAS
+            flatpickr(".selector-fecha-compra", {
                 locale: "es",
                 dateFormat: "Y-m-d",
                 maxDate: "today",

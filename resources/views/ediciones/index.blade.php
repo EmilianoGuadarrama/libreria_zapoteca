@@ -61,9 +61,13 @@
             <tbody>
                 @forelse($ediciones as $edicion)
                     @php
-                        $portadaEdicion = $edicion->portada ? asset('storage/' . $edicion->portada) : null;
-                        $portadaLibro = optional($edicion->libro)->portada ? asset('storage/' . $edicion->libro->portada) : null;
-                        $portadaFinal = $portadaEdicion ?? $portadaLibro;
+                        // CERO CLONES: Le quitamos la dependencia al libro. SOLO lee su propia foto.
+                        $portadaFinal = null;
+                        if (!empty($edicion->portada)) {
+                            $portadaFinal = str_contains($edicion->portada, '/') 
+                                ? asset('storage/' . $edicion->portada) 
+                                : asset('img/' . $edicion->portada);
+                        }
                     @endphp
 
                     <tr>
@@ -380,9 +384,13 @@
 {{-- MODALES SHOW, EDIT Y DELETE --}}
 @foreach($ediciones as $edicion)
     @php
-        $portadaEdicion = $edicion->portada ? asset('storage/' . $edicion->portada) : null;
-        $portadaLibro = optional($edicion->libro)->portada ? asset('storage/' . $edicion->libro->portada) : null;
-        $portadaFinal = $portadaEdicion ?? $portadaLibro;
+        // CERO CLONES EN LOS MODALES TAMBIÉN
+        $portadaFinal = null;
+        if (!empty($edicion->portada)) {
+            $portadaFinal = str_contains($edicion->portada, '/') 
+                ? asset('storage/' . $edicion->portada) 
+                : asset('img/' . $edicion->portada);
+        }
     @endphp
 
     {{-- MODAL SHOW --}}
@@ -508,9 +516,7 @@
                                         <div class="text-muted">Portada usada</div>
                                         <div class="fw-bold">
                                             @if($edicion->portada)
-                                                Edición
-                                            @elseif(optional($edicion->libro)->portada)
-                                                Libro
+                                                De esta edición
                                             @else
                                                 Sin portada
                                             @endif
@@ -742,33 +748,29 @@
     <div class="modal fade" id="modalDeleteEdicion{{ $edicion->id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0"
-                     style="background-color: #4b1c71; color: white; border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title bebas fs-4">
-                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Eliminar Edición
+                <div class="modal-header border-0 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title bebas fs-4" style="text-transform: uppercase;">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Eliminación
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <div class="modal-body p-4">
-                    <p class="mb-1">¿Deseas eliminar esta edición?</p>
-                    <p class="fw-bold mb-0" style="color: #4b1c71;">
-                        {{ optional($edicion->libro)->titulo ?? 'Sin libro' }} - {{ $edicion->numero_edicion }}ª edición
-                    </p>
-                    <small class="text-muted">Esta acción aplicará eliminación lógica si tu modelo usa SoftDeletes.</small>
+                <div class="modal-body p-4 text-center">
+                    <p class="fs-5 mb-0 mt-2">¿Estás seguro de eliminar la edición de <br><strong>{{ optional($edicion->libro)->titulo ?? 'Sin libro' }} - {{ $edicion->numero_edicion }}ª edición</strong>?</p>
+                    
                 </div>
 
-                <div class="modal-footer border-0 p-4 pt-0">
+                <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">
                         Cancelar
                     </button>
 
-                    <form action="{{ route('ediciones.destroy', $edicion->id) }}" method="POST">
+                    <form action="{{ route('ediciones.destroy', $edicion->id) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
 
                         <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
-                            Eliminar
+                            Sí, eliminar
                         </button>
                     </form>
                 </div>
